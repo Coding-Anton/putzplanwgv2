@@ -188,372 +188,394 @@
         import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+        // === FIREBASE CONFIG INSERTED ===
         const firebaseConfig = {
             apiKey: "AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg",
             authDomain: "wg-putzplanv2.firebaseapp.com",
             projectId: "wg-putzplanv2",
-            storageBucket: "wg-putzplanv2.firebasestorage.app",
+            storageBucket: "wg-putzplanv2.appspot.com",
             messagingSenderId: "12646186977",
             appId: "1:12646186977:web:b3913f027908e2143f9ca0",
             measurementId: "G-1767FJRQLQ"
         };
-
-        if (!firebaseConfig.projectId) {
-            document.getElementById('loading-overlay').innerHTML = `
-                <div class="text-center p-4">
-                    <h2 class="text-2xl font-bold text-red-600">Configuration Missing</h2>
-                    <p class="mt-2 text-gray-700">Please paste your Firebase configuration into the HTML file to connect the app.</p>
-                </div>
-            `;
-            return;
-        }
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // ===================================
         
-        const stateDocRef = doc(db, "rota", "appState");
-
-        const names = ['Jakob', 'Annamaria', 'Fabiana', 'Anton', 'Kshitija'];
-        const weeklyTasks = {
-            'Kitchen': ['Thoroughly clean countertops & sink', 'Clean stove / hob', 'Wipe down kitchen fronts & appliance exteriors (remove fingerprints)', 'Empty all bins (general, paper) & wipe if necessary', 'Sweep & then mop the floor'],
-            'Bathroom': ['Clean the two sinks and the large mirror', 'Clean shower / bathtub and fittings', 'Dust and wipe down the shelf', 'Sweep & mop the floor'],
-            'Separate WC': ['Thoroughly clean toilet inside and out', 'Clean the sink', 'Sweep & mop the floor', 'Refill toilet paper and soap if needed'],
-            'Living Area / Hallway': ['Dust shelves, TV, and other surfaces', 'Tidy up common area (fold blankets, put away magazines, fluff cushions)', 'Thoroughly sweep/vacuum the entire floor and mop if necessary']
-        };
-        
-        let totalWeeklyTasks = Object.values(weeklyTasks).flat().length;
-        let appState = {};
-        let progressChart;
-        let confirmAction = null;
-        let unsubscribe;
-
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const mainContent = document.getElementById('main-content');
-        const currentPersonEl = document.getElementById('current-person');
-        const rotationListEl = document.getElementById('rotation-list');
-        const nextPersonBtn = document.getElementById('next-person-btn');
-        const taskListsContainer = document.getElementById('task-lists-container');
-        const currentPersonTasksEls = document.querySelectorAll('#current-person-tasks');
-        const tabs = document.querySelectorAll('.tab-button');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        const weekStartEl = document.getElementById('current-week-start');
-        const weekEndEl = document.getElementById('current-week-end');
-        const historyModal = document.getElementById('history-modal');
-        const showHistoryBtn = document.getElementById('show-history-btn');
-        const closeHistoryBtn = document.getElementById('close-history-btn');
-        const exportHistoryBtn = document.getElementById('export-history-btn');
-        const historyContent = document.getElementById('history-content');
-        const confirmModal = document.getElementById('confirm-modal');
-        const confirmModalTitle = document.getElementById('confirm-modal-title');
-        const confirmModalText = document.getElementById('confirm-modal-text');
-        const confirmModalYesBtn = document.getElementById('confirm-modal-yes');
-        const confirmModalNoBtn = document.getElementById('confirm-modal-no');
-
-        function getWeekId(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-        }
-
-        function getWeekDateRange(date) {
-            const start = new Date(date);
-            start.setDate(start.getDate() - start.getDay() + (start.getDay() === 0 ? -6 : 1));
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
-            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-            return {
-                start: start.toLocaleDateString('en-GB', options),
-                end: end.toLocaleDateString('en-GB', options)
-            };
-        }
-        
-        async function updateFirestoreState(newState) {
-             try {
-                await setDoc(stateDocRef, newState, { merge: true });
-            } catch (error) {
-                console.error("Error updating Firestore: ", error);
-                alert("Could not save changes. Please check your connection and try again.");
-            }
-        }
-
-        function createCheckboxes() {
-            taskListsContainer.innerHTML = '';
-            appState.currentWeekTasks = appState.currentWeekTasks || {};
-
-            for (const area in weeklyTasks) {
-                const areaContainer = document.createElement('div');
-                areaContainer.className = 'bg-gray-50 p-4 rounded-lg';
-                const title = document.createElement('h4');
-                title.className = 'text-lg font-semibold mb-3 text-teal-800 border-b pb-2';
-                title.textContent = area;
-                areaContainer.appendChild(title);
-
-                const list = document.createElement('ul');
-                list.className = 'space-y-2';
-                weeklyTasks[area].forEach((task, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'task-list-item flex items-center';
-                    const checkboxId = `${area.replace(/\s+/g, '-')}-${index}`;
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = checkboxId;
-                    checkbox.checked = appState.currentWeekTasks[checkboxId] || false;
-                    checkbox.className = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500';
-                    checkbox.addEventListener('change', async (e) => {
-                        const newTasks = { ...appState.currentWeekTasks, [checkboxId]: e.target.checked };
-                        await updateFirestoreState({ currentWeekTasks: newTasks });
-                    });
-                    
-                    const label = document.createElement('label');
-                    label.htmlFor = checkboxId;
-                    label.textContent = task;
-                    label.className = 'ml-3 block text-sm text-gray-700';
-
-                    li.appendChild(checkbox);
-                    li.appendChild(label);
-                    list.appendChild(li);
-                });
-                areaContainer.appendChild(list);
-                taskListsContainer.appendChild(areaContainer);
-            }
-        }
-
-        function updateDisplay() {
-            if (!appState || appState.currentIndex === undefined) return;
+        function main() {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
             
-            const currentName = names[appState.currentIndex];
-            currentPersonEl.textContent = currentName;
-            currentPersonTasksEls.forEach(el => el.textContent = currentName);
+            const stateDocRef = doc(db, "rota", "appState");
 
-            const range = getWeekDateRange(new Date(appState.currentWeekStartDate));
-            weekStartEl.textContent = range.start;
-            weekEndEl.textContent = range.end;
+            const names = ['Jakob', 'Annamaria', 'Fabiana', 'Anton', 'Kshitija'];
+            const weeklyTasks = {
+                'Kitchen': ['Thoroughly clean countertops & sink', 'Clean stove / hob', 'Wipe down kitchen fronts & appliance exteriors (remove fingerprints)', 'Empty all bins (general, paper) & wipe if necessary', 'Sweep & then mop the floor'],
+                'Bathroom': ['Clean the two sinks and the large mirror', 'Clean shower / bathtub and fittings', 'Dust and wipe down the shelf', 'Sweep & mop the floor'],
+                'Separate WC': ['Thoroughly clean toilet inside and out', 'Clean the sink', 'Sweep & mop the floor', 'Refill toilet paper and soap if needed'],
+                'Living Area / Hallway': ['Dust shelves, TV, and other surfaces', 'Tidy up common area (fold blankets, put away magazines, fluff cushions)', 'Thoroughly sweep/vacuum the entire floor and mop if necessary']
+            };
+            
+            let totalWeeklyTasks = Object.values(weeklyTasks).flat().length;
+            let appState = {};
+            let progressChart;
+            let confirmAction = null;
+            let unsubscribe;
 
-            rotationListEl.innerHTML = '';
-            names.forEach((name, index) => {
-                const li = document.createElement('li');
-                li.textContent = name;
-                
-                const isActive = index === appState.currentIndex;
-                li.className = `py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 ${isActive ? 'bg-amber-400 text-amber-900 shadow' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-amber-200'}`;
-                
-                if (!isActive) {
-                    li.addEventListener('click', () => {
-                        showConfirmModal(
-                            'Swap Duty?',
-                            `Do you want to switch to <strong>${name}</strong>?<br><br><span class="text-sm text-red-600">The current week's progress will be reset and NOT saved in the history.</span>`,
-                            'Yes, Swap',
-                            async () => {
-                                const newState = { ...appState, currentIndex: index, currentWeekTasks: {} };
-                                await updateFirestoreState(newState);
-                            }
-                        );
-                    });
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const mainContent = document.getElementById('main-content');
+            const currentPersonEl = document.getElementById('current-person');
+            const rotationListEl = document.getElementById('rotation-list');
+            const nextPersonBtn = document.getElementById('next-person-btn');
+            const taskListsContainer = document.getElementById('task-lists-container');
+            const currentPersonTasksEls = document.querySelectorAll('#current-person-tasks');
+            const tabs = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            const weekStartEl = document.getElementById('current-week-start');
+            const weekEndEl = document.getElementById('current-week-end');
+            const historyModal = document.getElementById('history-modal');
+            const showHistoryBtn = document.getElementById('show-history-btn');
+            const closeHistoryBtn = document.getElementById('close-history-btn');
+            const exportHistoryBtn = document.getElementById('export-history-btn');
+            const historyContent = document.getElementById('history-content');
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmModalTitle = document.getElementById('confirm-modal-title');
+            const confirmModalText = document.getElementById('confirm-modal-text');
+            const confirmModalYesBtn = document.getElementById('confirm-modal-yes');
+            const confirmModalNoBtn = document.getElementById('confirm-modal-no');
+
+            function getWeekId(date) {
+                const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                const dayNum = d.getUTCDay() || 7;
+                d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+            }
+
+            function getWeekDateRange(date) {
+                const start = new Date(date);
+                start.setDate(start.getDate() - start.getDay() + (start.getDay() === 0 ? -6 : 1));
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                return {
+                    start: start.toLocaleDateString('en-GB', options),
+                    end: end.toLocaleDateString('en-GB', options)
+                };
+            }
+            
+            async function updateFirestoreState(newState) {
+                 try {
+                    await setDoc(stateDocRef, newState, { merge: true });
+                } catch (error) {
+                    console.error("Error updating Firestore: ", error);
+                    alert("Could not save changes. Please check your connection and try again.");
                 }
-                rotationListEl.appendChild(li);
-            });
-            
-            createCheckboxes();
-            if (progressChart) updateChart();
+            }
 
-            loadingOverlay.classList.add('hidden');
-            mainContent.classList.remove('opacity-0');
-        }
-        
-        async function nextPerson(isAutoAdvance = false) {
-            const proceed = async () => {
-                const completedTasksCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
-                const historyEntry = {
-                    person: names[appState.currentIndex],
-                    dateRange: getWeekDateRange(new Date(appState.currentWeekStartDate)),
-                    tasksCompleted: completedTasksCount,
-                    totalTasks: totalWeeklyTasks
-                };
+            function createCheckboxes() {
+                taskListsContainer.innerHTML = '';
+                appState.currentWeekTasks = appState.currentWeekTasks || {};
+
+                for (const area in weeklyTasks) {
+                    const areaContainer = document.createElement('div');
+                    areaContainer.className = 'bg-gray-50 p-4 rounded-lg';
+                    const title = document.createElement('h4');
+                    title.className = 'text-lg font-semibold mb-3 text-teal-800 border-b pb-2';
+                    title.textContent = area;
+                    areaContainer.appendChild(title);
+
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-2';
+                    weeklyTasks[area].forEach((task, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'task-list-item flex items-center';
+                        const checkboxId = `${area.replace(/\s+/g, '-')}-${index}`;
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = checkboxId;
+                        checkbox.checked = appState.currentWeekTasks[checkboxId] || false;
+                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500';
+                        checkbox.addEventListener('change', async (e) => {
+                            const newTasks = { ...appState.currentWeekTasks, [checkboxId]: e.target.checked };
+                            await updateFirestoreState({ currentWeekTasks: newTasks });
+                        });
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.textContent = task;
+                        label.className = 'ml-3 block text-sm text-gray-700';
+
+                        li.appendChild(checkbox);
+                        li.appendChild(label);
+                        list.appendChild(li);
+                    });
+                    areaContainer.appendChild(list);
+                    taskListsContainer.appendChild(areaContainer);
+                }
+            }
+
+            function updateDisplay() {
+                if (!appState || appState.currentIndex === undefined) {
+                    return;
+                }
                 
-                const newHistory = [...(appState.history || []), historyEntry];
-                const newIndex = (appState.currentIndex + 1) % names.length;
+                const currentName = names[appState.currentIndex];
+                currentPersonEl.textContent = currentName;
+                currentPersonTasksEls.forEach(el => el.textContent = currentName);
 
-                const newState = {
-                    history: newHistory,
-                    currentIndex: newIndex,
-                    currentWeekTasks: {},
-                    currentWeekStartDate: new Date().toISOString().split('T')[0]
+                const range = getWeekDateRange(new Date(appState.currentWeekStartDate));
+                weekStartEl.textContent = range.start;
+                weekEndEl.textContent = range.end;
+
+                rotationListEl.innerHTML = '';
+                names.forEach((name, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
+                    
+                    const isActive = index === appState.currentIndex;
+                    li.className = `py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 ${isActive ? 'bg-amber-400 text-amber-900 shadow' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-amber-200'}`;
+                    
+                    if (!isActive) {
+                        li.addEventListener('click', () => {
+                            showConfirmModal(
+                                'Swap Duty?',
+                                `Do you want to switch to <strong>${name}</strong>?<br><br><span class="text-sm text-red-600">The current week's progress will be reset and NOT saved in the history.</span>`,
+                                'Yes, Swap',
+                                async () => {
+                                    const newState = { ...appState, currentIndex: index, currentWeekTasks: {} };
+                                    await updateFirestoreState(newState);
+                                }
+                            );
+                        });
+                    }
+                    rotationListEl.appendChild(li);
+                });
+                
+                createCheckboxes();
+                if (progressChart) updateChart();
+
+                loadingOverlay.classList.add('hidden');
+                mainContent.classList.remove('opacity-0');
+            }
+            
+            async function nextPerson(isAutoAdvance = false) {
+                const proceed = async () => {
+                    const completedTasksCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
+                    const historyEntry = {
+                        person: names[appState.currentIndex],
+                        dateRange: getWeekDateRange(new Date(appState.currentWeekStartDate)),
+                        tasksCompleted: completedTasksCount,
+                        totalTasks: totalWeeklyTasks
+                    };
+                    
+                    const newHistory = [...(appState.history || []), historyEntry];
+                    const newIndex = (appState.currentIndex + 1) % names.length;
+
+                    const newState = {
+                        history: newHistory,
+                        currentIndex: newIndex,
+                        currentWeekTasks: {},
+                        currentWeekStartDate: new Date().toISOString().split('T')[0]
+                    };
+                    await updateFirestoreState(newState);
                 };
-                await updateFirestoreState(newState);
-            };
 
-            if (!isAutoAdvance && Object.keys(appState.currentWeekTasks || {}).length === 0) {
-                showConfirmModal(
-                    'Advance to Next Week?',
-                    'No tasks have been recorded for this week. Do you want to proceed to the next week anyway?',
-                    'Yes, Proceed',
-                    proceed
-                );
-            } else {
-                await proceed();
+                if (!isAutoAdvance && Object.keys(appState.currentWeekTasks || {}).length === 0) {
+                    showConfirmModal(
+                        'Advance to Next Week?',
+                        'No tasks have been recorded for this week. Do you want to proceed to the next week anyway?',
+                        'Yes, Proceed',
+                        proceed
+                    );
+                } else {
+                    await proceed();
+                }
             }
-        }
-        
-        function initChart() {
-            const ctx = document.getElementById('progressChart').getContext('2d');
-            progressChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0, totalWeeklyTasks], backgroundColor: ['#00796B', '#E0E0E0'], borderColor: ['#FDFBF8'], borderWidth: 4, hoverOffset: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-            });
-        }
-
-        function updateChart() {
-            const checkedCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
-            progressChart.data.datasets[0].data[0] = checkedCount;
-            progressChart.data.datasets[0].data[1] = totalWeeklyTasks - checkedCount;
-            progressChart.update();
-        }
-
-        function renderHistory() {
-            const history = appState.history || [];
-            if (history.length === 0) {
-                historyContent.innerHTML = `<p class="text-center text-gray-500">No history available yet.</p>`;
-                return;
+            
+            function initChart() {
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                progressChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0, totalWeeklyTasks], backgroundColor: ['#00796B', '#E0E0E0'], borderColor: ['#FDFBF8'], borderWidth: 4, hoverOffset: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+                });
             }
-            historyContent.innerHTML = '';
-            [...history].reverse().forEach(entry => {
-                const percentage = entry.totalTasks > 0 ? Math.round((entry.tasksCompleted / entry.totalTasks) * 100) : 0;
-                const card = document.createElement('div');
-                card.className = 'bg-gray-50 p-4 rounded-lg mb-3';
-                card.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-teal-800">${entry.person}</p>
-                            <p class="text-sm text-gray-500">Week: ${entry.dateRange.start} - ${entry.dateRange.end}</p>
-                        </div>
-                        <div class="text-right">
-                             <p class="font-semibold">${entry.tasksCompleted} / ${entry.totalTasks} completed</p>
-                             <div class="w-24 bg-gray-200 rounded-full h-2.5 mt-1">
-                                <div class="bg-teal-600 h-2.5 rounded-full" style="width: ${percentage}%"></div>
+
+            function updateChart() {
+                const checkedCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
+                progressChart.data.datasets[0].data[0] = checkedCount;
+                progressChart.data.datasets[0].data[1] = totalWeeklyTasks - checkedCount;
+                progressChart.update();
+            }
+
+            function renderHistory() {
+                const history = appState.history || [];
+                if (history.length === 0) {
+                    historyContent.innerHTML = `<p class="text-center text-gray-500">No history available yet.</p>`;
+                    return;
+                }
+                historyContent.innerHTML = '';
+                [...history].reverse().forEach(entry => {
+                    const percentage = entry.totalTasks > 0 ? Math.round((entry.tasksCompleted / entry.totalTasks) * 100) : 0;
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-50 p-4 rounded-lg mb-3';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-teal-800">${entry.person}</p>
+                                <p class="text-sm text-gray-500">Week: ${entry.dateRange.start} - ${entry.dateRange.end}</p>
+                            </div>
+                            <div class="text-right">
+                                 <p class="font-semibold">${entry.tasksCompleted} / ${entry.totalTasks} completed</p>
+                                 <div class="w-24 bg-gray-200 rounded-full h-2.5 mt-1">
+                                    <div class="bg-teal-600 h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                </div>
                             </div>
                         </div>
+                    `;
+                    historyContent.appendChild(card);
+                });
+            }
+
+            function exportHistory() {
+                const history = appState.history || [];
+                if (history.length === 0) {
+                    alert("No history available to export.");
+                    return;
+                }
+                let exportText = "Shared Living Cleaning Rota History\n===================================\n\n";
+                history.forEach(entry => {
+                    exportText += `Week: ${entry.dateRange.start} - ${entry.dateRange.end}\n`;
+                    exportText += `Responsible: ${entry.person}\n`;
+                    exportText += `Completed: ${entry.tasksCompleted} of ${entry.totalTasks} tasks\n`;
+                    exportText += `--------------------\n\n`;
+                });
+
+                const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'cleaning-rota-history.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            function showConfirmModal(title, text, yesButtonText, onConfirm) {
+                confirmModalTitle.textContent = title;
+                confirmModalText.innerHTML = text;
+                confirmModalYesBtn.textContent = yesButtonText;
+                confirmAction = onConfirm;
+                confirmModal.classList.remove('hidden');
+            }
+
+            async function setupFirestoreListener() {
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error);
+                    if (error.code === 'auth/configuration-not-found') {
+                        loadingOverlay.innerHTML = `
+                        <div class="text-center p-4 max-w-lg mx-auto">
+                            <h2 class="text-2xl font-bold text-red-600">Action Required in Firebase</h2>
+                            <p class="mt-2 text-gray-700">The app can't log in because Anonymous Authentication isn't enabled in your Firebase project.</p>
+                            <p class="mt-4 font-semibold">How to fix this:</p>
+                            <ol class="list-decimal list-inside text-left mt-2 space-y-1 text-gray-600">
+                                <li>Go to your Firebase Console.</li>
+                                <li>Select your project: <strong>wg-putzplanv2</strong></li>
+                                <li>In the left menu, go to <strong>Build > Authentication</strong>.</li>
+                                <li>Click the <strong>"Get started"</strong> button if it appears.</li>
+                                <li>Go to the <strong>"Sign-in method"</strong> tab.</li>
+                                <li>Find <strong>"Anonymous"</strong> in the provider list and click it.</li>
+                                <li>Enable the toggle switch and click <strong>Save</strong>.</li>
+                                <li>Reload this page.</li>
+                            </ol>
+                        </div>
+                        `;
+                    }
+                    return;
+                }
+
+                unsubscribe = onSnapshot(stateDocRef, (doc) => {
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        appState = data;
+                        
+                        const today = new Date();
+                        const currentWeekId = getWeekId(today);
+                        const lastSavedWeekId = getWeekId(new Date(appState.currentWeekStartDate));
+                        
+                        if(currentWeekId !== lastSavedWeekId) {
+                            nextPerson(true);
+                        } else {
+                            updateDisplay();
+                        }
+                    } else {
+                        console.log("No state in Firestore, creating initial state...");
+                        const initialState = {
+                            currentIndex: 0,
+                            history: [],
+                            currentWeekStartDate: new Date().toISOString().split('T')[0],
+                            currentWeekTasks: {}
+                        };
+                        updateFirestoreState(initialState).then(() => {
+                            appState = initialState;
+                            updateDisplay();
+                        });
+                    }
+                }, (error) => {
+                    console.error("Firestore snapshot error:", error);
+                    loadingOverlay.innerHTML = `
+                    <div class="text-center p-4">
+                        <h2 class="text-2xl font-bold text-red-600">Connection Error</h2>
+                        <p class="mt-2 text-gray-700">Could not connect to the database. Check your internet connection and Firestore rules.</p>
                     </div>
                 `;
-                historyContent.appendChild(card);
-            });
-        }
-
-        function exportHistory() {
-            const history = appState.history || [];
-            if (history.length === 0) {
-                alert("No history available to export.");
-                return;
+                });
             }
-            let exportText = "Shared Living Cleaning Rota History\n===================================\n\n";
-            history.forEach(entry => {
-                exportText += `Week: ${entry.dateRange.start} - ${entry.dateRange.end}\n`;
-                exportText += `Responsible: ${entry.person}\n`;
-                exportText += `Completed: ${entry.tasksCompleted} of ${entry.totalTasks} tasks\n`;
-                exportText += `--------------------\n\n`;
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+                    tabs.forEach(t => t.classList.remove('tab-active', 'tab-inactive'));
+                    tabs.forEach(t => t.classList.add(t === tab ? 'tab-active' : 'tab-inactive'));
+                    tabPanes.forEach(pane => pane.classList.toggle('hidden', pane.id !== `${targetTab}-tasks`));
+                });
             });
-
-            const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'cleaning-rota-history.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        
-        function showConfirmModal(title, text, yesButtonText, onConfirm) {
-            confirmModalTitle.textContent = title;
-            confirmModalText.innerHTML = text;
-            confirmModalYesBtn.textContent = yesButtonText;
-            confirmAction = onConfirm;
-            confirmModal.classList.remove('hidden');
-        }
-
-        async function setupFirestoreListener() {
-            await signInAnonymously(auth);
-
-            unsubscribe = onSnapshot(stateDocRef, (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-                    appState = data;
-                    
-                    const today = new Date();
-                    const currentWeekId = getWeekId(today);
-                    const lastSavedWeekId = getWeekId(new Date(appState.currentWeekStartDate));
-                    
-                    if(currentWeekId !== lastSavedWeekId) {
-                        nextPerson(true);
-                    } else {
-                        updateDisplay();
-                    }
-                } else {
-                    console.log("No state in Firestore, creating initial state...");
-                    const initialState = {
-                        currentIndex: 0,
-                        history: [],
-                        currentWeekStartDate: new Date().toISOString().split('T')[0],
-                        currentWeekTasks: {}
-                    };
-                    updateFirestoreState(initialState).then(() => {
-                        appState = initialState;
-                        updateDisplay();
-                    });
+            
+            confirmModalYesBtn.addEventListener('click', () => {
+                if (confirmAction) {
+                    confirmAction();
                 }
-            }, (error) => {
-                console.error("Firestore snapshot error:", error);
-                document.getElementById('loading-overlay').innerHTML = `
-                <div class="text-center p-4">
-                    <h2 class="text-2xl font-bold text-red-600">Connection Error</h2>
-                    <p class="mt-2 text-gray-700">Could not connect to the database. Check your internet connection and Firestore rules.</p>
-                </div>
-            `;
+                closeConfirmModal();
             });
+
+            const closeConfirmModal = () => {
+                confirmModal.classList.add('hidden');
+                confirmAction = null;
+            };
+
+            confirmModalNoBtn.addEventListener('click', closeConfirmModal);
+            confirmModal.querySelector('.modal-backdrop').addEventListener('click', closeConfirmModal);
+
+            nextPersonBtn.addEventListener('click', () => nextPerson(false));
+            showHistoryBtn.addEventListener('click', () => {
+                renderHistory();
+                historyModal.classList.remove('hidden');
+            });
+            closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
+            historyModal.querySelector('.modal-backdrop').addEventListener('click', () => historyModal.classList.add('hidden'));
+            exportHistoryBtn.addEventListener('click', exportHistory);
+            
+            tabs[0].click();
+            initChart();
+            setupFirestoreListener();
         }
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const targetTab = tab.dataset.tab;
-                tabs.forEach(t => t.classList.remove('tab-active', 'tab-inactive'));
-                tabs.forEach(t => t.classList.add(t === tab ? 'tab-active' : 'tab-inactive'));
-                tabPanes.forEach(pane => pane.classList.toggle('hidden', pane.id !== `${targetTab}-tasks`));
-            });
-        });
-        
-        confirmModalYesBtn.addEventListener('click', () => {
-            if (confirmAction) {
-                confirmAction();
-            }
-            closeConfirmModal();
-        });
-
-        const closeConfirmModal = () => {
-            confirmModal.classList.add('hidden');
-            confirmAction = null;
-        };
-
-        confirmModalNoBtn.addEventListener('click', closeConfirmModal);
-        confirmModal.querySelector('.modal-backdrop').addEventListener('click', closeConfirmModal);
-
-        nextPersonBtn.addEventListener('click', () => nextPerson(false));
-        showHistoryBtn.addEventListener('click', () => {
-            renderHistory();
-            historyModal.classList.remove('hidden');
-        });
-        closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
-        historyModal.querySelector('.modal-backdrop').addEventListener('click', () => historyModal.classList.add('hidden'));
-        exportHistoryBtn.addEventListener('click', exportHistory);
-        
-        tabs[0].click();
-        initChart();
-        setupFirestoreListener();
+        document.addEventListener('DOMContentLoaded', main);
     </script>
 
 </body>
