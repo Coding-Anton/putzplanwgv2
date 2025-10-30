@@ -1,195 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Cleaning Rota</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Harmonious Home -->
-    <!-- Application Structure Plan: Die Anwendung ist als interaktives Dashboard konzipiert, um die Nachteile eines statischen Plans zu überwinden. Der Fokus liegt auf der sofortigen Erkennbarkeit, wer aktuell für den Putzdienst verantwortlich ist. Eine prominente Anzeige des Namens und ein visuelles Hervorheben in der Rotationsliste stellen dies sicher. Die Aufgaben sind in thematische, umschaltbare Reiter (Wöchentlich, Täglich, Grundreinigung) gegliedert, was die Informationsarchitektur klar und nutzerfreundlich macht. Interaktive Checklisten für die wöchentlichen Aufgaben, gekoppelt mit einer Fortschrittsanzeige (Donut-Chart), gamifizieren den Prozess und geben direktes visuelles Feedback. Die neue Verlaufsfunktion wird über ein Modal integriert, um die Hauptansicht sauber zu halten, und nutzt localStorage zur Datenpersistenz. Die Exportfunktion macht die Daten extern nutzbar. Diese task-orientierte Struktur ist für die WG-Mitglieder intuitiver und motivierender als das blosse Ablesen eines Textdokuments. -->
-    <!-- Visualization & Content Choices: 
-        - Rotationsliste -> Geordnete Liste mit visueller Hervorhebung -> Interaktion über "Nächste Person"-Button -> Ziel: Klarheit über aktuellen & nächsten Dienst; Methode: HTML/CSS/JS.
-        - Wöchentliche Aufgaben -> Interaktive Checklisten pro Raum -> Interaktion durch Klick (abhaken) -> Ziel: Einfache Nachverfolgung des Fortschritts; Methode: HTML Forms/JS mit localStorage-Anbindung.
-        - Aufgabenfortschritt (Wöchentlich) -> Donut-Chart -> Interaktion: Dynamische Aktualisierung bei Klick auf Checkbox -> Ziel: Visuelle Motivation & schneller Überblick; Methode: Chart.js (Canvas).
-        - Aufgabenkategorien (Wöchentlich/Täglich/Grundreinigung) -> Reiter-Navigation -> Interaktion durch Klick auf Reiter -> Ziel: Strukturierte Darstellung; Methode: HTML/JS.
-        - Verlauf -> Modalfenster mit dynamischer Liste -> Interaktion: Öffnen/Schließen des Modals -> Ziel: Nachvollziehbarkeit vergangener Putzdienste; Methode: HTML/JS aus localStorage.
-        - Export -> Button im Modal -> Interaktion: Klick löst Download aus -> Ziel: Datenportabilität; Methode: JS Blob/File-Download.
-        - Alle Entscheidungen unterstützen die Dashboard-Struktur und vermeiden die Nachteile eines statischen Plans. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <title>WG-Putzplan 3.0 (Fixed-Anchor)</title>
     <style>
+        /* CSS bleibt das gleiche wie vorher... */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FDFBF8;
-            color: #4A4A4A;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
         }
-        .tab-active {
-            background-color: #00796B;
-            color: #FFFFFF;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .content {
+            padding: 30px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #007bff;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            font-size: 1.2em;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        li.is-current {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+        .skip-counter {
+            font-weight: bold;
+            color: #dc3545;
+            margin-left: 8px;
+        }
+        .actions {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            font-size: 1em;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
             font-weight: 500;
         }
-        .tab-inactive {
-            background-color: #E0E0E0;
-            color: #4A4A4A;
+        #done-button {
+            background-color: #28a745;
+            color: white;
         }
-        .task-list-item input:checked + label {
-            text-decoration: line-through;
-            color: #9E9E9E;
+        #done-button:hover {
+            background-color: #218838;
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 300px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 300px;
+        #skip-button {
+            background-color: #ffc107;
+            color: #333;
         }
-        .modal-backdrop {
-            background-color: rgba(0,0,0,0.5);
+        #skip-button:hover {
+            background-color: #e0a800;
         }
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #00796B;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        .whatsapp-action {
+            margin-top: 30px;
+            text-align: center;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        #whatsapp-button {
+            background-color: #25D366;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
         }
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-        <div class="loading-spinner"></div>
-        <p class="mt-4 text-gray-600">Connecting to the rota...</p>
-    </div>
-
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-teal-800">Shared Living Cleaning Rota</h1>
-            <p class="text-lg mt-2 text-gray-600">Your interactive plan for a tidy home!</p>
+    <div class="container">
+        <header>
+            <h1>WG-Putzplan</h1>
         </header>
+        <div class="content">
+            <h2>Reihenfolge</h2>
+            <ul id="person-list">
+                </ul>
 
-        <main class="opacity-0 transition-opacity duration-500" id="main-content">
-            <section id="rotation-section" class="bg-white p-6 rounded-2xl shadow-lg mb-8">
-                <h2 class="text-2xl font-bold text-center mb-4 text-teal-700">Whose turn is it this week?</h2>
-                <div class="text-center p-4 bg-amber-100 border-l-4 border-amber-400 rounded-lg">
-                    <p class="text-lg text-gray-700">Week from <span id="current-week-start"></span> to <span id="current-week-end"></span>:</p>
-                    <p id="current-person" class="text-3xl font-bold text-amber-800 my-2">-</p>
-                </div>
-                
-                <div class="mt-6">
-                    <h3 class="text-lg font-semibold mb-3 text-center">Rotation:</h3>
-                    <p class="text-center text-xs text-gray-500 mb-2">(Click a name to swap the current turn)</p>
-                    <ol id="rotation-list" class="flex flex-wrap justify-center gap-2"></ol>
-                </div>
-
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
-                    <button id="next-person-btn" class="w-full sm:w-auto bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
-                        Next Person & Start Week →
-                    </button>
-                     <button id="show-history-btn" class="w-full sm:w-auto bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">
-                        Show History
-                    </button>
-                </div>
-            </section>
-
-            <section id="tasks-section" class="bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold text-center mb-6 text-teal-700">Current Tasks</h2>
-                
-                <div id="tabs" class="flex justify-center mb-6 rounded-full p-1 bg-gray-200 w-full max-w-md mx-auto">
-                    <button data-tab="weekly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Weekly</button>
-                    <button data-tab="daily" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Daily (Everyone)</button>
-                    <button data-tab="monthly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Deep Clean</button>
-                </div>
-
-                <div id="tab-content">
-                    <div id="weekly-tasks" class="tab-pane">
-                        <p class="text-center mb-6 text-gray-600">These tasks are for <span class="font-bold" id="current-person-tasks">-</span> to complete.</p>
-                        <div class="grid md:grid-cols-2 gap-8">
-                            <div id="task-lists-container" class="space-y-6"></div>
-                            <div class="flex flex-col items-center justify-center">
-                                <h3 class="text-lg font-semibold mb-4 text-center">Progress</h3>
-                                <div class="chart-container">
-                                    <canvas id="progressChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="daily-tasks" class="tab-pane hidden">
-                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
-                           <h3 class="text-xl font-bold text-teal-700 mb-4">Daily Tasks for EVERYONE!</h3>
-                           <p class="mb-4 text-gray-600">These small things are only fair and ensure a baseline of cleanliness is maintained.</p>
-                           <ul class="list-disc list-inside space-y-2 text-gray-700">
-                                <li>Wash your own dishes, pots, and cutlery <strong>immediately</strong> or put them in the dishwasher.</li>
-                                <li>Briefly wipe down your work surface and the stove after cooking.</li>
-                                <li>Put away your own shoes and jackets properly.</li>
-                                <li>In the bathroom, briefly rinse the sink after use and remove your own hair from the drain.</li>
-                           </ul>
-                        </div>
-                    </div>
-                    <div id="monthly-tasks" class="tab-pane hidden">
-                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
-                           <h3 class="text-xl font-bold text-teal-700 mb-4">Joint Deep Clean (every 2-3 months)</h3>
-                           <p class="mb-4 text-gray-600">It's best if we do these tasks all together on a weekend.</p>
-                           <ul class="list-disc list-inside space-y-2 text-gray-700">
-                                <li>Clean the inside of the refrigerator.</li>
-                                <li>Take the glass bottles to the glass recycling container.</li>
-                                <li>Clean the oven.</li>
-                                <li>Clean the windows in the common areas.</li>
-                                <li>Wipe down doors and door frames.</li>
-                           </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div id="history-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div class="fixed inset-0 modal-backdrop"></div>
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl z-10 transform transition-all max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b">
-                <h2 class="text-2xl font-bold text-teal-700">Cleaning History</h2>
-                <button id="close-history-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            <div class="actions">
+                <button id="done-button">Dienst erledigt</button>
+                <button id="skip-button">Dienst überspringen</button>
             </div>
-            <div id="history-content" class="overflow-y-auto flex-grow pr-2">
-            </div>
-            <div class="mt-6 pt-4 border-t flex justify-end">
-                <button id="export-history-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
-                    Export History
-                </button>
+
+            <div class="whatsapp-action">
+                <a id="whatsapp-button" href="#" target="_blank">In WhatsApp erinnern</a>
             </div>
         </div>
     </div>
 
-    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div class="fixed inset-0 modal-backdrop"></div>
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md z-10 transform transition-all">
-            <h2 id="confirm-modal-title" class="text-xl font-bold text-gray-800 mb-4">Confirmation</h2>
-            <p id="confirm-modal-text" class="text-gray-600 mb-6 leading-relaxed">Are you sure?</p>
-            <div class="flex justify-end gap-4">
-                <button id="confirm-modal-no" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">Cancel</button>
-                <button id="confirm-modal-yes" class="bg-amber-500 text-white font-bold py-2 px-6 rounded-full hover:bg-amber-600 transition-colors duration-300 shadow-md">Yes, Confirm</button>
-            </div>
-        </div>
-    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    <script type="module">
-        // Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-        // === FIREBASE CONFIG INSERTED ===
-        const firebaseConfig = {
+    <script>
+        // === PASTE FIREBASE CONFIG HERE ===
+        // const firebaseConfig = {
             apiKey: "AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg",
             authDomain: "wg-putzplanv2.firebaseapp.com",
             projectId: "wg-putzplanv2",
@@ -197,387 +146,178 @@
             messagingSenderId: "12646186977",
             appId: "1:12646186977:web:b3913f027908e2143f9ca0",
             measurementId: "G-1767FJRQLQ"
-        };
-        // ===================================
-        
-        function main() {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const auth = getAuth(app);
-            
-            const stateDocRef = doc(db, "rota", "appState");
+        // };
+        // ==================================
 
-            const names = ['Jakob', 'Annamaria', 'Fabiana', 'Anton', 'Kshitija'];
-            const weeklyTasks = {
-                'Kitchen': ['Thoroughly clean countertops & sink', 'Clean stove / hob', 'Wipe down kitchen fronts & appliance exteriors (remove fingerprints)', 'Empty all bins (general, paper) & wipe if necessary', 'Sweep & then mop the floor'],
-                'Bathroom': ['Clean the two sinks and the large mirror', 'Clean shower / bathtub and fittings', 'Dust and wipe down the shelf', 'Sweep & mop the floor'],
-                'Separate WC': ['Thoroughly clean toilet inside and out', 'Clean the sink', 'Sweep & mop the floor', 'Refill toilet paper and soap if needed'],
-                'Living Area / Hallway': ['Dust shelves, TV, and other surfaces', 'Tidy up common area (fold blankets, put away magazines, fluff cushions)', 'Thoroughly sweep/vacuum the entire floor and mop if necessary']
-            };
-            
-            let totalWeeklyTasks = Object.values(weeklyTasks).flat().length;
-            let appState = {};
-            let progressChart;
-            let confirmAction = null;
-            let unsubscribe;
+        // Firebase initialisieren
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const mainContent = document.getElementById('main-content');
-            const currentPersonEl = document.getElementById('current-person');
-            const rotationListEl = document.getElementById('rotation-list');
-            const nextPersonBtn = document.getElementById('next-person-btn');
-            const taskListsContainer = document.getElementById('task-lists-container');
-            const currentPersonTasksEls = document.querySelectorAll('#current-person-tasks');
-            const tabs = document.querySelectorAll('.tab-button');
-            const tabPanes = document.querySelectorAll('.tab-pane');
-            const weekStartEl = document.getElementById('current-week-start');
-            const weekEndEl = document.getElementById('current-week-end');
-            const historyModal = document.getElementById('history-modal');
-            const showHistoryBtn = document.getElementById('show-history-btn');
-            const closeHistoryBtn = document.getElementById('close-history-btn');
-            const exportHistoryBtn = document.getElementById('export-history-btn');
-            const historyContent = document.getElementById('history-content');
-            const confirmModal = document.getElementById('confirm-modal');
-            const confirmModalTitle = document.getElementById('confirm-modal-title');
-            const confirmModalText = document.getElementById('confirm-modal-text');
-            const confirmModalYesBtn = document.getElementById('confirm-modal-yes');
-            const confirmModalNoBtn = document.getElementById('confirm-modal-no');
+        // Referenzen zu den Collections
+        const peopleCollection = db.collection("people");
+        const configDoc = db.doc("config/state");
 
-            function getWeekId(date) {
-                const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-                const dayNum = d.getUTCDay() || 7;
-                d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-                const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-                const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-                return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-            }
+        // DOM-Elemente
+        const personListEl = document.getElementById("person-list");
+        const doneButton = document.getElementById("done-button");
+        const skipButton = document.getElementById("skip-button");
+        const whatsappButton = document.getElementById("whatsapp-button");
 
-            function getWeekDateRange(date) {
-                const start = new Date(date);
-                start.setDate(start.getDate() - start.getDay() + (start.getDay() === 0 ? -6 : 1));
-                const end = new Date(start);
-                end.setDate(start.getDate() + 6);
-                const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-                return {
-                    start: start.toLocaleDateString('en-GB', options),
-                    end: end.toLocaleDateString('en-GB', options)
-                };
-            }
-            
-            async function updateFirestoreState(newState) {
-                 try {
-                    await setDoc(stateDocRef, newState, { merge: true });
-                } catch (error) {
-                    console.error("Error updating Firestore: ", error);
-                    alert("Could not save changes. Please check your connection and try again.");
-                }
-            }
+        let currentPeople = [];
+        let currentState = {};
+        let isProcessingRotation = false; // Sperre
 
-            function createCheckboxes() {
-                taskListsContainer.innerHTML = '';
-                appState.currentWeekTasks = appState.currentWeekTasks || {};
-
-                for (const area in weeklyTasks) {
-                    const areaContainer = document.createElement('div');
-                    areaContainer.className = 'bg-gray-50 p-4 rounded-lg';
-                    const title = document.createElement('h4');
-                    title.className = 'text-lg font-semibold mb-3 text-teal-800 border-b pb-2';
-                    title.textContent = area;
-                    areaContainer.appendChild(title);
-
-                    const list = document.createElement('ul');
-                    list.className = 'space-y-2';
-                    weeklyTasks[area].forEach((task, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'task-list-item flex items-center';
-                        const checkboxId = `${area.replace(/\s+/g, '-')}-${index}`;
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = checkboxId;
-                        checkbox.checked = appState.currentWeekTasks[checkboxId] || false;
-                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500';
-                        checkbox.addEventListener('change', async (e) => {
-                            const newTasks = { ...appState.currentWeekTasks, [checkboxId]: e.target.checked };
-                            await updateFirestoreState({ currentWeekTasks: newTasks });
-                        });
-                        
-                        const label = document.createElement('label');
-                        label.htmlFor = checkboxId;
-                        label.textContent = task;
-                        label.className = 'ml-3 block text-sm text-gray-700';
-
-                        li.appendChild(checkbox);
-                        li.appendChild(label);
-                        list.appendChild(li);
-                    });
-                    areaContainer.appendChild(list);
-                    taskListsContainer.appendChild(areaContainer);
-                }
-            }
-
-            function updateDisplay() {
-                if (!appState || appState.currentIndex === undefined) {
-                    return;
-                }
-                
-                const currentName = names[appState.currentIndex];
-                currentPersonEl.textContent = currentName;
-                currentPersonTasksEls.forEach(el => el.textContent = currentName);
-
-                const range = getWeekDateRange(new Date(appState.currentWeekStartDate));
-                weekStartEl.textContent = range.start;
-                weekEndEl.textContent = range.end;
-
-                rotationListEl.innerHTML = '';
-                names.forEach((name, index) => {
-                    const li = document.createElement('li');
-                    li.textContent = name;
-                    
-                    const isActive = index === appState.currentIndex;
-                    li.className = `py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 ${isActive ? 'bg-amber-400 text-amber-900 shadow' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-amber-200'}`;
-                    
-                    if (!isActive) {
-                        li.addEventListener('click', () => {
-                            showConfirmModal(
-                                'Swap Duty?',
-                                `Do you want to switch to <strong>${name}</strong>?<br><br><span class="text-sm text-red-600">The current week's progress will be reset and NOT saved in the history.</span>`,
-                                'Yes, Swap',
-                                async () => {
-                                    const newState = { ...appState, currentIndex: index, currentWeekTasks: {} };
-                                    await updateFirestoreState(newState);
-                                }
-                            );
-                        });
-                    }
-                    rotationListEl.appendChild(li);
-                });
-                
-                createCheckboxes();
-                if (progressChart) updateChart();
-
-                loadingOverlay.classList.add('hidden');
-                mainContent.classList.remove('opacity-0');
-            }
-            
-            async function nextPerson(isAutoAdvance = false) {
-                const proceed = async () => {
-                    const completedTasksCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
-                    const historyEntry = {
-                        person: names[appState.currentIndex],
-                        dateRange: getWeekDateRange(new Date(appState.currentWeekStartDate)),
-                        tasksCompleted: completedTasksCount,
-                        totalTasks: totalWeeklyTasks
-                    };
-                    
-                    const newHistory = [...(appState.history || []), historyEntry];
-                    const newIndex = (appState.currentIndex + 1) % names.length;
-
-                    const newState = {
-                        history: newHistory,
-                        currentIndex: newIndex,
-                        currentWeekTasks: {},
-                        currentWeekStartDate: new Date().toISOString().split('T')[0]
-                    };
-                    await updateFirestoreState(newState);
-                };
-
-                if (!isAutoAdvance && Object.keys(appState.currentWeekTasks || {}).length === 0) {
-                    showConfirmModal(
-                        'Advance to Next Week?',
-                        'No tasks have been recorded for this week. Do you want to proceed to the next week anyway?',
-                        'Yes, Proceed',
-                        proceed
-                    );
-                } else {
-                    await proceed();
-                }
-            }
-            
-            function initChart() {
-                const ctx = document.getElementById('progressChart').getContext('2d');
-                progressChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0, totalWeeklyTasks], backgroundColor: ['#00796B', '#E0E0E0'], borderColor: ['#FDFBF8'], borderWidth: 4, hoverOffset: 4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-                });
-            }
-
-            function updateChart() {
-                const checkedCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
-                progressChart.data.datasets[0].data[0] = checkedCount;
-                progressChart.data.datasets[0].data[1] = totalWeeklyTasks - checkedCount;
-                progressChart.update();
-            }
-
-            function renderHistory() {
-                const history = appState.history || [];
-                if (history.length === 0) {
-                    historyContent.innerHTML = `<p class="text-center text-gray-500">No history available yet.</p>`;
-                    return;
-                }
-                historyContent.innerHTML = '';
-                [...history].reverse().forEach(entry => {
-                    const percentage = entry.totalTasks > 0 ? Math.round((entry.tasksCompleted / entry.totalTasks) * 100) : 0;
-                    const card = document.createElement('div');
-                    card.className = 'bg-gray-50 p-4 rounded-lg mb-3';
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-bold text-teal-800">${entry.person}</p>
-                                <p class="text-sm text-gray-500">Week: ${entry.dateRange.start} - ${entry.dateRange.end}</p>
-                            </div>
-                            <div class="text-right">
-                                 <p class="font-semibold">${entry.tasksCompleted} / ${entry.totalTasks} completed</p>
-                                 <div class="w-24 bg-gray-200 rounded-full h-2.5 mt-1">
-                                    <div class="bg-teal-600 h-2.5 rounded-full" style="width: ${percentage}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    historyContent.appendChild(card);
-                });
-            }
-
-            function exportHistory() {
-                const history = appState.history || [];
-                if (history.length === 0) {
-                    alert("No history available to export.");
-                    return;
-                }
-                let exportText = "Shared Living Cleaning Rota History\n===================================\n\n";
-                history.forEach(entry => {
-                    exportText += `Week: ${entry.dateRange.start} - ${entry.dateRange.end}\n`;
-                    exportText += `Responsible: ${entry.person}\n`;
-                    exportText += `Completed: ${entry.tasksCompleted} of ${entry.totalTasks} tasks\n`;
-                    exportText += `--------------------\n\n`;
-                });
-
-                const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'cleaning-rota-history.txt';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            function showConfirmModal(title, text, yesButtonText, onConfirm) {
-                confirmModalTitle.textContent = title;
-                confirmModalText.innerHTML = text;
-                confirmModalYesBtn.textContent = yesButtonText;
-                confirmAction = onConfirm;
-                confirmModal.classList.remove('hidden');
-            }
-
-            async function setupFirestoreListener() {
-                try {
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Firebase Auth Error:", error);
-                    if (error.code === 'auth/configuration-not-found') {
-                        loadingOverlay.innerHTML = `
-                        <div class="text-center p-4 max-w-lg mx-auto">
-                            <h2 class="text-2xl font-bold text-red-600">Action Required in Firebase</h2>
-                            <p class="mt-2 text-gray-700">The app can't log in because Anonymous Authentication isn't enabled in your Firebase project.</p>
-                            <p class="mt-4 font-semibold">How to fix this:</p>
-                            <ol class="list-decimal list-inside text-left mt-2 space-y-1 text-gray-600">
-                                <li>Go to your Firebase Console.</li>
-                                <li>Select your project: <strong>wg-putzplanv2</strong></li>
-                                <li>In the left menu, go to <strong>Build > Authentication</strong>.</li>
-                                <li>Click the <strong>"Get started"</strong> button if it appears.</li>
-                                <li>Go to the <strong>"Sign-in method"</strong> tab.</li>
-                                <li>Find <strong>"Anonymous"</strong> in the provider list and click it.</li>
-                                <li>Enable the toggle switch and click <strong>Save</strong>.</li>
-                                <li>Reload this page.</li>
-                            </ol>
-                        </div>
-                        `;
-                    }
-                    return;
-                }
-
-                unsubscribe = onSnapshot(stateDocRef, (doc) => {
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        appState = data;
-                        
-                        const today = new Date();
-                        const currentWeekId = getWeekId(today);
-                        const lastSavedWeekId = getWeekId(new Date(appState.currentWeekStartDate));
-                        
-                        if(currentWeekId !== lastSavedWeekId) {
-                            nextPerson(true);
-                        } else {
-                            updateDisplay();
-                        }
-                    } else {
-                        console.log("No state in Firestore, creating initial state...");
-                        const initialState = {
-                            currentIndex: 0,
-                            history: [],
-                            currentWeekStartDate: new Date().toISOString().split('T')[0],
-                            currentWeekTasks: {}
-                        };
-                        updateFirestoreState(initialState).then(() => {
-                            appState = initialState;
-                            updateDisplay();
-                        });
-                    }
-                }, (error) => {
-                    console.error("Firestore snapshot error:", error);
-                    loadingOverlay.innerHTML = `
-                    <div class="text-center p-4">
-                        <h2 class="text-2xl font-bold text-red-600">Connection Error</h2>
-                        <p class="mt-2 text-gray-700">Could not connect to the database. Check your internet connection and Firestore rules.</p>
-                    </div>
-                `;
-                });
-            }
-
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const targetTab = tab.dataset.tab;
-                    tabs.forEach(t => t.classList.remove('tab-active', 'tab-inactive'));
-                    tabs.forEach(t => t.classList.add(t === tab ? 'tab-active' : 'tab-inactive'));
-                    tabPanes.forEach(pane => pane.classList.toggle('hidden', pane.id !== `${targetTab}-tasks`));
-                });
-            });
-            
-            confirmModalYesBtn.addEventListener('click', () => {
-                if (confirmAction) {
-                    confirmAction();
-                }
-                closeConfirmModal();
-            });
-
-            const closeConfirmModal = () => {
-                confirmModal.classList.add('hidden');
-                confirmAction = null;
-            };
-
-            confirmModalNoBtn.addEventListener('click', closeConfirmModal);
-            confirmModal.querySelector('.modal-backdrop').addEventListener('click', closeConfirmModal);
-
-            nextPersonBtn.addEventListener('click', () => nextPerson(false));
-            showHistoryBtn.addEventListener('click', () => {
-                renderHistory();
-                historyModal.classList.remove('hidden');
-            });
-            closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
-            historyModal.querySelector('.modal-backdrop').addEventListener('click', () => historyModal.classList.add('hidden'));
-            exportHistoryBtn.addEventListener('click', exportHistory);
-            
-            tabs[0].click();
-            initChart();
-            setupFirestoreListener();
+        /**
+         * Hilfsfunktion: Findet den Montag, 00:00 Uhr, der aktuellen Kalenderwoche.
+         */
+        function getMondayOfThisWeek(date) {
+            const d = new Date(date);
+            // 0=Sonntag, 1=Montag, ..., 6=Samstag
+            const day = d.getDay(); 
+            // Logik, um zum Montag zu kommen:
+            // Wenn Sonntag (0), gehe 6 Tage zurück.
+            // Wenn Montag (1), gehe 0 Tage zurück.
+            // Wenn Dienstag (2), gehe 1 Tag zurück.
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+            const monday = new Date(d.setDate(diff));
+            monday.setHours(0, 0, 0, 0); // Wichtig: Auf Mitternacht setzen
+            return monday;
         }
 
-        document.addEventListener('DOMContentLoaded', main);
+        // Listener für den globalen Status
+        configDoc.onSnapshot(async (doc) => {
+            if (isProcessingRotation) return; // Nicht ausführen, wenn gerade eine Rotation läuft
+
+            if (!doc.exists) {
+                console.error("Config-Dokument 'config/state' nicht gefunden!");
+                return;
+            }
+
+            currentState = doc.data();
+
+            // NEU: Initialisiere das Datum, falls es beim ersten Mal fehlt.
+            if (!currentState.lastRotationTimestamp) {
+                console.log("Initialisiere lastRotationTimestamp...");
+                isProcessingRotation = true;
+                // Setze auf ein Datum in der Vergangenheit, um Rotation sofort auszulösen
+                const pastDate = new Date(0); 
+                await configDoc.set({ lastRotationTimestamp: pastDate }, { merge: true });
+                isProcessingRotation = false;
+                return; // Snapshot wird neu ausgelöst
+            }
+
+            // --- KORRIGIERTE Auto-Rotations-Logik ---
+
+            // 1. Finde den Montag dieser Kalenderwoche (den "Anker")
+            const mondayOfThisWeek = getMondayOfThisWeek(new Date());
+
+            // 2. Hole das Datum der letzten Rotation (manuell oder auto)
+            const lastRotationDate = currentState.lastRotationTimestamp.toDate();
+
+            // 3. DER CHECK: Ist die letzte Rotation *vor* dem Montag dieser Woche passiert?
+            //    Wenn ja, ist eine neue Rotation für diese Woche fällig.
+            if (lastRotationDate.getTime() < mondayOfThisWeek.getTime()) {
+                console.log("Neue Kalenderwoche erkannt! Führe automatische Rotation durch...");
+                isProcessingRotation = true;
+                // 'false' = "erledigt", nicht "übersprungen"
+                // WICHTIG: Die Rotation selbst setzt den *neuen* Timestamp auf "jetzt".
+                await advanceWeek(false); 
+                isProcessingRotation = false; 
+                return; // Snapshot wird neu ausgelöst (und rendert dann)
+            }
+            
+            // Wenn keine Rotation stattgefunden hat, rendern.
+            renderPeople();
+        });
+
+        // Listener für die Personen
+        peopleCollection.orderBy("order").onSnapshot((snapshot) => {
+            currentPeople = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderPeople();
+        });
+
+        function renderPeople() {
+            if (!currentState.hasOwnProperty('currentOrderIndex') || currentPeople.length === 0) {
+                personListEl.innerHTML = "<li>Lade Daten...</li>";
+                return;
+            }
+
+            personListEl.innerHTML = "";
+            let currentPersonName = "";
+
+            currentPeople.forEach(person => {
+                const li = document.createElement("li");
+                
+                let nameHtml = person.name;
+                if (person.skipCount > 0) {
+                    nameHtml += ` <span class="skip-counter">(${person.skipCount})</span>`;
+                }
+                
+                li.innerHTML = nameHtml;
+
+                if (person.order === currentState.currentOrderIndex) {
+                    li.classList.add("is-current");
+                    currentPersonName = person.name;
+                }
+                personListEl.appendChild(li);
+            });
+            
+            // WhatsApp-Button aktualisieren
+            const whatsappMessage = encodeURIComponent(`Hey WG! Diese Woche ist ${currentPersonName} mit dem Putzdienst dran.`);
+            whatsappButton.href = `whatsapp://send?text=${whatsappMessage}`;
+        }
+
+        // Button-Listener. Sie lösen *immer* eine Rotation "jetzt" aus.
+        doneButton.addEventListener("click", () => advanceWeek(false));
+        skipButton.addEventListener("click", () => advanceWeek(true));
+
+        async function advanceWeek(wasSkipped) {
+            if (isProcessingRotation) return; // Verhindert Doppelklick
+            isProcessingRotation = true;
+
+            const currentPerson = currentPeople.find(p => p.order === currentState.currentOrderIndex);
+            
+            if (!currentPerson) {
+                isProcessingRotation = false;
+                return;
+            }
+
+            // 1. Update den Skip-Status der aktuellen Person (falls übersprungen)
+            if (wasSkipped) {
+                const newSkipCount = (currentPerson.skipCount || 0) + 1;
+                await peopleCollection.doc(currentPerson.id).update({ skipCount: newSkipCount });
+            }
+
+            // 2. Finde die NÄCHSTE Person (mit "Vormerk"-Logik)
+            const skippedPeople = currentPeople
+                .filter(p => p.skipCount > 0 && p.id !== currentPerson.id)
+                .sort((a, b) => a.order - b.order);
+
+            let nextPerson;
+
+            if (skippedPeople.length > 0) {
+                // Ja, nimm die erste Person aus der Skip-Liste
+                nextPerson = skippedPeople[0];
+                // Reduziere ihren Skip-Zähler
+                const newSkipCount = nextPerson.skipCount - 1;
+                await peopleCollection.doc(nextPerson.id).update({ skipCount: newSkipCount });
+            } else {
+                // Nein, nimm einfach die nächste Person in der normalen Reihenfolge
+                const nextIndex = (currentState.currentOrderIndex + 1) % currentPeople.length;
+                nextPerson = currentPeople.find(p => p.order === nextIndex);
+            }
+
+            // 3. Setze den globalen Status auf die neue Person UND das NEUE DATUM ("jetzt")
+            if (nextPerson) {
+                await configDoc.update({ 
+                    currentOrderIndex: nextPerson.order,
+                    lastRotationTimestamp: new Date() // WICHTIG! Setzt den Timer neu.
+                });
+            }
+
+            isProcessingRotation = false;
+        }
     </script>
 
 </body>
 </html>
-
