@@ -3,197 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaktiver Putzplan 4.0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>WG-Putzplan (Einfache Version)</title>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FDFBF8;
-            color: #4A4A4A;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
         }
-        .tab-active {
-            background-color: #00796B;
-            color: #FFFFFF;
-            font-weight: 500;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
         }
-        .tab-inactive {
-            background-color: #E0E0E0;
-            color: #4A4A4A;
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
         }
-        .task-list-item input:checked + label {
-            text-decoration: line-through;
-            color: #9E9E9E;
+        header h1 {
+            margin: 0;
+            font-size: 1.5em;
         }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 300px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 300px;
+        .content {
+            padding: 30px;
         }
-        .modal-backdrop {
-            background-color: rgba(0,0,0,0.5);
+        h2 {
+            margin-top: 0;
+            color: #007bff;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
         }
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #00796B;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        li {
+            font-size: 1.2em;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        li.is-current {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
         }
         .skip-counter {
             font-weight: bold;
-            color: #dc3545; /* Rot, um aufzufallen */
+            color: #dc3545;
             margin-left: 8px;
-            font-size: 0.9em;
         }
-        /* Übersetzung der englischen Texte, die im HTML hartkodiert waren */
-        body { -moz-osx-font-smoothing: grayscale; -webkit-font-smoothing: antialiased; }
+        .actions {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            font-size: 1em;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        #done-button {
+            background-color: #28a745;
+            color: white;
+        }
+        #done-button:hover {
+            background-color: #218838;
+        }
+        #skip-button {
+            background-color: #ffc107;
+            color: #333;
+        }
+        #skip-button:hover {
+            background-color: #e0a800;
+        }
+        .whatsapp-action {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #whatsapp-button {
+            background-color: #25D366;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-        <div class="loading-spinner"></div>
-        <p class="mt-4 text-gray-600">Verbinde mit Putzplan...</p>
-    </div>
-
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-teal-800">WG Putzplan</h1>
-            <p class="text-lg mt-2 text-gray-600">Euer interaktiver Plan für ein sauberes Zuhause!</p>
+    <div class="container" id="main-content" style="visibility: hidden;">
+        <header>
+            <h1>WG-Putzplan</h1>
         </header>
+        <div class="content">
+            <h2>Reihenfolge</h2>
+            <ul id="person-list">
+                </ul>
 
-        <main class="opacity-0 transition-opacity duration-500" id="main-content">
-            <section id="rotation-section" class="bg-white p-6 rounded-2xl shadow-lg mb-8">
-                <h2 class="text-2xl font-bold text-center mb-4 text-teal-700">Wer ist diese Woche dran?</h2>
-                <div class="text-center p-4 bg-amber-100 border-l-4 border-amber-400 rounded-lg">
-                    <p class="text-lg text-gray-700">Woche vom <span id="current-week-start"></span> bis <span id="current-week-end"></span>:</p>
-                    <p id="current-person" class="text-3xl font-bold text-amber-800 my-2">-</p>
-                </div>
-                
-                <div class="mt-6">
-                    <h3 class="text-lg font-semibold mb-3 text-center">Rotation:</h3>
-                    <ol id="rotation-list" class="flex flex-wrap justify-center gap-2"></ol>
-                </div>
-
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
-                    <button id="next-person-btn" class="w-full sm:w-auto bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
-                        Dienst erledigt
-                    </button>
-                    <button id="skip-button" class="w-full sm:w-auto bg-amber-500 text-white font-bold py-2 px-6 rounded-full hover:bg-amber-600 transition-colors duration-300 shadow-md">
-                        Dienst überspringen
-                    </button>
-                     <button id="show-history-btn" class="w-full sm:w-auto bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">
-                        Verlauf anzeigen
-                    </button>
-                </div>
-                <div class="text-center mt-6">
-                    <a id="whatsapp-button" href="#" target="_blank" class="inline-block bg-green-500 text-white font-bold py-2 px-6 rounded-full hover:bg-green-600 transition-colors duration-300 shadow-md">
-                        In WhatsApp erinnern
-                    </a>
-                </div>
-            </section>
-
-            <section id="tasks-section" class="bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold text-center mb-6 text-teal-700">Aktuelle Aufgaben</h2>
-                
-                <div id="tabs" class="flex justify-center mb-6 rounded-full p-1 bg-gray-200 w-full max-w-md mx-auto">
-                    <button data-tab="weekly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Wöchentlich</button>
-                    <button data-tab="daily" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Täglich (Alle)</button>
-                    <button data-tab="monthly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Grundreinigung</button>
-                </div>
-
-                <div id="tab-content">
-                    <div id="weekly-tasks" class="tab-pane">
-                        <p class="text-center mb-6 text-gray-600">Diese Aufgaben sind für <span class="font-bold" id="current-person-tasks">-</span>.</p>
-                        <div class="grid md:grid-cols-2 gap-8">
-                            <div id="task-lists-container" class="space-y-6"></div>
-                            <div class="flex flex-col items-center justify-center">
-                                <h3 class="text-lg font-semibold mb-4 text-center">Fortschritt</h3>
-                                <div class="chart-container">
-                                    <canvas id="progressChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="daily-tasks" class="tab-pane hidden">
-                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
-                           <h3 class="text-xl font-bold text-teal-700 mb-4">Tägliche Aufgaben für ALLE!</h3>
-                           <p class="mb-4 text-gray-600">Diese kleinen Dinge sind nur fair und sorgen für eine Grundsauberkeit.</p>
-                           <ul class="list-disc list-inside space-y-2 text-gray-700">
-                                <li>Eigenes Geschirr, Töpfe, Besteck <strong>sofort</strong> abspülen oder in die Spülmaschine räumen.</li>
-                                <li>Eigene Arbeitsfläche und Herd nach dem Kochen kurz abwischen.</li>
-                                <li>Eigene Schuhe und Jacken ordentlich wegräumen.</li>
-                                <li>Im Bad das Waschbecken nach Benutzung kurz ausspülen und eigene Haare aus dem Abfluss entfernen.</li>
-                           </ul>
-                        </div>
-                    </div>
-                    <div id="monthly-tasks" class="tab-pane hidden">
-                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
-                           <h3 class="text-xl font-bold text-teal-700 mb-4">Gemeinsame Grundreinigung (alle 2-3 Monate)</h3>
-                           <p class="mb-4 text-gray-600">Diese Aufgaben machen wir am besten alle zusammen an einem Wochenende.</p>
-                           <ul class="list-disc list-inside space-y-2 text-gray-700">
-                                <li>Kühlschrank von innen reinigen.</li>
-                                <li>Altglas wegbringen.</li>
-                                <li>Backofen reinigen.</li>
-                                <li>Fenster in den Gemeinschaftsräumen putzen.</li>
-                                <li>Türen und Türrahmen abwischen.</li>
-                           </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div id="history-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div class="fixed inset-0 modal-backdrop"></div>
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl z-10 transform transition-all max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-4 border-b">
-                <h2 class="text-2xl font-bold text-teal-700">Putz-Verlauf</h2>
-                <button id="close-history-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            <div class="actions">
+                <button id="done-button">Dienst erledigt</button>
+                <button id="skip-button">Dienst überspringen</button>
+            }
             </div>
-            <div id="history-content" class="overflow-y-auto flex-grow pr-2">
-            </div>
-            <div class="mt-6 pt-4 border-t flex justify-end">
-                <button id="export-history-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
-                    Verlauf exportieren
-                </button>
+
+            <div class="whatsapp-action">
+                <a id="whatsapp-button" href="#" target="_blank">In WhatsApp erinnern</a>
             </div>
         </div>
     </div>
 
-    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div class="fixed inset-0 modal-backdrop"></div>
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md z-10 transform transition-all">
-            <h2 id="confirm-modal-title" class="text-xl font-bold text-gray-800 mb-4">Bestätigung</h2>
-            <p id="confirm-modal-text" class="text-gray-600 mb-6 leading-relaxed">Bist du sicher?</p>
-            <div class="flex justify-end gap-4">
-                <button id="confirm-modal-no" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">Abbrechen</button>
-                <button id="confirm-modal-yes" class="bg-amber-500 text-white font-bold py-2 px-6 rounded-full hover:bg-amber-600 transition-colors duration-300 shadow-md">Ja, bestätigen</button>
-            </div>
-        </div>
+    <div id="loading-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; font-family: sans-serif; color: #555;">
+        <p>Verbinde mit Putzplan...</p>
     </div>
 
-    <script type="module">
-        // Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // WICHTIG: getDoc und getDocs HINZUGEFÜGT
-        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, query, orderBy, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-        // === FIREBASE CONFIG (Aus deiner Datei übernommen) ===
+    <script>
+        // === HIER DEINE FIREBASE CONFIG EINFÜGEN ===
         const firebaseConfig = {
             apiKey: "AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg",
             authDomain: "wg-putzplanv2.firebaseapp.com",
@@ -203,175 +151,210 @@
             appId: "1:12646186977:web:b3913f027908e2143f9ca0",
             measurementId: "G-1767FJRQLQ"
         };
-        // ===================================
+        // ==================================
+
+        // Firebase initialisieren
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error("Firebase Init failed:", e);
+            document.getElementById("loading-overlay").innerHTML = "Firebase-Konfiguration fehlgeschlagen. Prüfe die Config.";
+        }
         
-        function main() {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const auth = getAuth(app);
-            
-            // NEUE DATENSTRUKTUR REFERENZEN
-            const peopleCollectionRef = collection(db, "people");
-            const configDocRef = doc(db, "config", "state");
+        const db = firebase.firestore();
 
-            // Die Aufgabenliste (DEUTSCH)
-            const weeklyTasks = {
-                'Küche': ['Arbeitsflächen & Spüle gründlich reinigen', 'Herd / Kochfeld putzen', 'Küchenfronten & Geräte außen abwischen (Fingerabdrücke)', 'Alle Mülleimer (Rest, Papier) leeren & bei Bedarf auswischen', 'Boden fegen & anschließend wischen'],
-                'Badezimmer': ['Die zwei Waschbecken und den großen Spiegel putzen', 'Dusche / Badewanne und Armaturen reinigen', 'Regal abstauben und abwischen', 'Boden fegen & wischen'],
-                'Separates WC': ['Toilette von innen und außen gründlich reinigen', 'Waschbecken putzen', 'Boden fegen & wischen', 'Toilettenpapier und Seife bei Bedarf nachfüllen'],
-                'Wohnbereich / Flur': ['Regale, TV und andere Oberflächen abstauben', 'Allgemeine Ordnung schaffen (Decken falten, Zeitschriften wegräumen)', 'Boden komplett fegen/saugen und bei Bedarf wischen']
-            };
-            
-            let totalWeeklyTasks = Object.values(weeklyTasks).flat().length;
-            let currentPeople = []; // Wird jetzt aus Firebase geladen
-            let currentState = {};  // Wird jetzt aus Firebase geladen
-            let progressChart;
-            let confirmAction = null;
-            let isProcessingRotation = false; // Sperre
+        // Referenzen zu den Collections
+        const peopleCollection = db.collection("people");
+        const configDoc = db.doc("config/state");
 
-            // DOM-Elemente
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const mainContent = document.getElementById('main-content');
-            const currentPersonEl = document.getElementById('current-person');
-            const rotationListEl = document.getElementById('rotation-list');
-            const nextPersonBtn = document.getElementById('next-person-btn');
-            const skipButton = document.getElementById('skip-button'); // NEU
-            const whatsappButton = document.getElementById('whatsapp-button'); // NEU
-            const taskListsContainer = document.getElementById('task-lists-container');
-            const currentPersonTasksEls = document.querySelectorAll('#current-person-tasks');
-            const tabs = document.querySelectorAll('.tab-button');
-            const tabPanes = document.querySelectorAll('.tab-pane');
-            const weekStartEl = document.getElementById('current-week-start');
-            const weekEndEl = document.getElementById('current-week-end');
-            const historyModal = document.getElementById('history-modal');
-            const showHistoryBtn = document.getElementById('show-history-btn');
-            const closeHistoryBtn = document.getElementById('close-history-btn');
-            const exportHistoryBtn = document.getElementById('export-history-btn');
-            const historyContent = document.getElementById('history-content');
-            const confirmModal = document.getElementById('confirm-modal');
-            const confirmModalTitle = document.getElementById('confirm-modal-title');
-            const confirmModalText = document.getElementById('confirm-modal-text');
-            const confirmModalYesBtn = document.getElementById('confirm-modal-yes');
-            const confirmModalNoBtn = document.getElementById('confirm-modal-no');
+        // DOM-Elemente
+        const personListEl = document.getElementById("person-list");
+        const doneButton = document.getElementById("done-button");
+        const skipButton = document.getElementById("skip-button");
+        const whatsappButton = document.getElementById("whatsapp-button");
+        const loadingOverlay = document.getElementById("loading-overlay");
+        const mainContent = document.getElementById("main-content");
 
-            /**
-             * Hilfsfunktion: Findet den Montag, 00:00 Uhr, der aktuellen Kalenderwoche.
-             */
-            function getMondayOfThisWeek(date) {
-                const d = new Date(date);
-                const day = d.getDay(); 
-                const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
-                const monday = new Date(d.setDate(diff));
-                monday.setHours(0, 0, 0, 0);
-                return monday;
+        let currentPeople = [];
+        let currentState = {};
+        let isProcessingRotation = false; // Sperre
+
+        /**
+         * Hilfsfunktion: Findet den Montag, 00:00 Uhr, der aktuellen Kalenderwoche.
+         */
+        function getMondayOfThisWeek(date) {
+            const d = new Date(date);
+            // 0=Sonntag, 1=Montag, ..., 6=Samstag
+            const day = d.getDay(); 
+            // Logik, um zum Montag zu kommen:
+            // Wenn Sonntag (0), gehe 6 Tage zurück.
+            // Wenn Montag (1), gehe 0 Tage zurück.
+            // Wenn Dienstag (2), gehe 1 Tag zurück.
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+            const monday = new Date(d.setDate(diff));
+            monday.setHours(0, 0, 0, 0); // Wichtig: Auf Mitternacht setzen
+            return monday;
+        }
+
+        // Listener für den globalen Status
+        configDoc.onSnapshot(async (doc) => {
+            console.log("Config Snapshot empfangen...");
+            if (isProcessingRotation) {
+                console.log("Rotation läuft, Snapshot ignoriert.");
+                return; 
             }
 
-            function getWeekDateRange(date) {
-                const start = new Date(date);
-                start.setDate(start.getDate() - start.getDay() + (start.getDay() === 0 ? -6 : 1));
-                const end = new Date(start);
-                end.setDate(start.getDate() + 6);
-                const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-                return {
-                    start: start.toLocaleDateString('de-DE', options), // Deutsch
-                    end: end.toLocaleDateString('de-DE', options)  // Deutsch
-                };
-            }
-            
-            async function updateFirestoreState(newState) {
-                 try {
-                    // setDoc statt updateDoc, um sicherzustellen, dass es erstellt wird
-                    await setDoc(configDocRef, newState, { merge: true });
-                } catch (error) {
-                    console.error("Error updating Firestore: ", error);
-                    alert("Änderungen konnten nicht gespeichert werden. Bitte Verbindung prüfen.");
-                }
-            }
-
-            function createCheckboxes() {
-                taskListsContainer.innerHTML = '';
-                currentState.currentWeekTasks = currentState.currentWeekTasks || {};
-
-                for (const area in weeklyTasks) {
-                    const areaContainer = document.createElement('div');
-                    areaContainer.className = 'bg-gray-50 p-4 rounded-lg';
-                    const title = document.createElement('h4');
-                    title.className = 'text-lg font-semibold mb-3 text-teal-800 border-b pb-2';
-                    title.textContent = area;
-                    areaContainer.appendChild(title);
-
-                    const list = document.createElement('ul');
-                    list.className = 'space-y-2';
-                    weeklyTasks[area].forEach((task, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'task-list-item flex items-center';
-                        const checkboxId = `${area.replace(/\s+/g, '-')}-${index}`;
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = checkboxId;
-                        checkbox.checked = currentState.currentWeekTasks[checkboxId] || false;
-                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500';
-                        checkbox.addEventListener('change', async (e) => {
-                            const newTasks = { ...currentState.currentWeekTasks, [checkboxId]: e.target.checked };
-                            await updateFirestoreState({ currentWeekTasks: newTasks });
-                        });
-                        
-                        const label = document.createElement('label');
-                        label.htmlFor = checkboxId;
-                        label.textContent = task;
-                        label.className = 'ml-3 block text-sm text-gray-700';
-
-                        li.appendChild(checkbox);
-                        li.appendChild(label);
-                        list.appendChild(li);
-                    });
-                    areaContainer.appendChild(list);
-                    taskListsContainer.appendChild(areaContainer);
-                }
-            }
-
-            function updateDisplay() {
-                if (currentPeople.length === 0 || !currentState.hasOwnProperty('currentOrderIndex')) {
-                    return; // Warte, bis beide Daten-Listener geladen sind
-                }
-                
-                const currentPerson = currentPeople.find(p => p.order === currentState.currentOrderIndex);
-                if (!currentPerson) return; // Sollte nicht passieren
-
-                const currentName = currentPerson.name;
-                currentPersonEl.textContent = currentName;
-                currentPersonTasksEls.forEach(el => el.textContent = currentName);
-
-                // Datumsanzeige (nutzt jetzt lastRotationTimestamp als Anker)
-                const lastRotationDate = currentState.lastRotationTimestamp ? currentState.lastRotationTimestamp.toDate() : new Date();
-                const range = getWeekDateRange(lastRotationDate);
-                weekStartEl.textContent = range.start;
-                weekEndEl.textContent = range.end;
-
-                rotationListEl.innerHTML = '';
-                currentPeople.forEach(person => {
-                    const li = document.createElement('li');
-                    
-                    let nameHtml = person.name;
-                    if (person.skipCount > 0) {
-                        nameHtml += ` <span class="skip-counter">(${person.skipCount})</span>`;
-                    }
-                    li.innerHTML = nameHtml;
-                    
-                    const isActive = person.order === currentState.currentOrderIndex;
-                    li.className = `py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 ${isActive ? 'bg-amber-400 text-amber-900 shadow' : 'bg-gray-200 text-gray-600'}`;
-                    
-                    rotationListEl.appendChild(li);
+            if (!doc.exists) {
+                console.error("Config-Dokument 'config/state' nicht gefunden! Initialisiere...");
+                loadingOverlay.innerHTML = "Initialisiere Putzplan...";
+                await configDoc.set({ 
+                    currentOrderIndex: 0,
+                    lastRotationTimestamp: new Date(0) 
                 });
-
-                // WhatsApp-Button aktualisieren
-                const whatsappMessage = encodeURIComponent(`Hey WG! Diese Woche ist ${currentName} mit dem Putzdienst dran.`);
-                whatsappButton.href = `whatsapp://send?text=${whatsappMessage}`;
-                
-                createCheckboxes();
-                if (progressChart) updateChart();
-
-                loadingOverlay.classList.add('hidden');
-                mainContent.classList.remove('opacity-0');
+                return; // Snapshot wird neu ausgelöst
             }
+
+            currentState = doc.data();
+
+            // Initialisiere Datum, falls es fehlt.
+            if (!currentState.lastRotationTimestamp) {
+                console.log("Initialisiere lastRotationTimestamp...");
+                isProcessingRotation = true;
+                await configDoc.set({ lastRotationTimestamp: new Date(0) }, { merge: true });
+                isProcessingRotation = false;
+                return; // Snapshot wird neu ausgelöst
+            }
+
+            // --- KORRIGIERTE Auto-Rotations-Logik ---
+            const mondayOfThisWeek = getMondayOfThisWeek(new Date());
+            const lastRotationDate = currentState.lastRotationTimestamp.toDate();
+
+            if (lastRotationDate.getTime() < mondayOfThisWeek.getTime()) {
+                console.log("Neue Kalenderwoche erkannt! Führe automatische Rotation durch...");
+                isProcessingRotation = true;
+                // 'false' = "erledigt", nicht "übersprungen"
+                await advanceWeek(false); 
+                isProcessingRotation = false; 
+                return; // Snapshot wird neu ausgelöst (und rendert dann)
+            }
+            
+            console.log("Rendere Personen...");
+            renderPeople();
+            
+            // Ladebildschirm ausblenden
+            loadingOverlay.style.display = "none";
+            mainContent.style.visibility = "visible";
+
+        }, (error) => {
+            console.error("FEHLER beim Laden von configDoc:", error);
+            loadingOverlay.innerHTML = "Fehler: Konnte Status nicht laden. Prüfe Firestore-Regeln und Verbindung.";
+        });
+
+        // Listener für die Personen
+        peopleCollection.orderBy("order").onSnapshot((snapshot) => {
+            console.log("People Snapshot empfangen...");
+            currentPeople = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderPeople();
+        }, (error) => {
+            console.error("FEHLER beim Laden von peopleCollection:", error);
+            loadingOverlay.innerHTML = "Fehler: Konnte Personenliste nicht laden. Prüfe Firestore-Regeln und 'people'-Collection.";
+        });
+
+        function renderPeople() {
+            if (!currentState.hasOwnProperty('currentOrderIndex') || currentPeople.length === 0) {
+                console.log("Warte auf Daten zum Rendern...");
+                return;
+            }
+
+            personListEl.innerHTML = "";
+            let currentPersonName = "";
+
+            currentPeople.forEach(person => {
+                const li = document.createElement("li");
+                
+                let nameHtml = person.name;
+                if (person.skipCount > 0) {
+                    nameHtml += ` <span class="skip-counter">(${person.skipCount})</span>`;
+                }
+                
+                li.innerHTML = nameHtml;
+
+                if (person.order === currentState.currentOrderIndex) {
+                    li.classList.add("is-current");
+                    currentPersonName = person.name;
+                }
+                personListEl.appendChild(li);
+            });
+            
+            // WhatsApp-Button aktualisieren
+            const whatsappMessage = encodeURIComponent(`Hey WG! Diese Woche ist ${currentPersonName} mit dem Putzdienst dran.`);
+            whatsappButton.href = `whatsapp://send?text=${whatsappMessage}`;
+        }
+
+        // Button-Listener.
+        doneButton.addEventListener("click", () => advanceWeek(false));
+        skipButton.addEventListener("click", () => advanceWeek(true));
+
+        async function advanceWeek(wasSkipped) {
+            console.log(`advanceWeek gestartet (skipped: ${wasSkipped})`);
+            if (isProcessingRotation) return; 
+            isProcessingRotation = true;
+
+            const currentPerson = currentPeople.find(p => p.order === currentState.currentOrderIndex);
+            
+            if (!currentPerson) {
+                console.error("Konnte aktuelle Person nicht finden!");
+                isProcessingRotation = false;
+                return;
+            }
+
+            try {
+                // 1. Update den Skip-Status der aktuellen Person (falls übersprungen)
+                if (wasSkipped) {
+                    const newSkipCount = (currentPerson.skipCount || 0) + 1;
+                    await peopleCollection.doc(currentPerson.id).update({ skipCount: newSkipCount });
+                }
+
+                // 2. Finde die NÄCHSTE Person (mit "Vormerk"-Logik)
+                const skippedPeople = currentPeople
+                    .filter(p => p.skipCount > 0 && p.id !== currentPerson.id)
+                    .sort((a, b) => a.order - b.order);
+
+                let nextPerson;
+
+                if (skippedPeople.length > 0) {
+                    console.log("Nimm nächste Person aus Skip-Liste.");
+                    nextPerson = skippedPeople[0];
+                    const newSkipCount = nextPerson.skipCount - 1;
+                    await peopleCollection.doc(nextPerson.id).update({ skipCount: newSkipCount });
+                } else {
+                    console.log("Nimm nächste Person aus normaler Rotation.");
+                    const nextIndex = (currentState.currentOrderIndex + 1) % currentPeople.length;
+                    nextPerson = currentPeople.find(p => p.order === nextIndex);
+                }
+
+                // 3. Setze den globalen Status auf die neue Person UND das NEUE DATUM ("jetzt")
+                if (nextPerson) {
+                    await configDoc.update({ 
+                        currentOrderIndex: nextPerson.order,
+                        lastRotationTimestamp: new Date() // WICHTIG! Setzt den Timer neu.
+                    });
+                }
+            } catch (e) {
+                console.error("Fehler in advanceWeek:", e);
+                alert("Ein Fehler ist aufgetreten. Bitte Seite neu laden.");
+            }
+            
+            console.log("Rotation abgeschlossen.");
+            isProcessingRotation = false;
+        }
+
+        // Fange alle nicht behandelten Fehler ab
+        window.addEventListener('error', function(event) {
+            console.error('Globaler FEHLER:', event.message, event.filename, event.lineno);
+            loadingOverlay.innerHTML = `Ein unerwarteter Fehler ist aufgetreten: ${event.message}`;
+        });
+    </script>
+
+</body>
+</html>
