@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WG-Putzplan (Einfache Version)</title>
+    <title>WG-Putzplan (V10 SDK)</title>
     <style>
+        /* CSS ist identisch mit der vorherigen Version */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -124,7 +125,6 @@
             <div class="actions">
                 <button id="done-button">Dienst erledigt</button>
                 <button id="skip-button">Dienst überspringen</button>
-            }
             </div>
 
             <div class="whatsapp-action">
@@ -134,14 +134,14 @@
     </div>
 
     <div id="loading-overlay" style="position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; font-family: sans-serif; color: #555;">
-        <p>Verbinde mit Putzplan...</p>
+        <p>Verbinde mit Putzplan (V10)...</p>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, query, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
-        // === HIER DEINE FIREBASE CONFIG EINFÜGEN ===
+        // === DEINE FIREBASE CONFIG ===
         const firebaseConfig = {
             apiKey: "AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg",
             authDomain: "wg-putzplanv2.firebaseapp.com",
@@ -152,20 +152,6 @@
             measurementId: "G-1767FJRQLQ"
         };
         // ==================================
-
-        // Firebase initialisieren
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch (e) {
-            console.error("Firebase Init failed:", e);
-            document.getElementById("loading-overlay").innerHTML = "Firebase-Konfiguration fehlgeschlagen. Prüfe die Config.";
-        }
-        
-        const db = firebase.firestore();
-
-        // Referenzen zu den Collections
-        const peopleCollection = db.collection("people");
-        const configDoc = db.doc("config/state");
 
         // DOM-Elemente
         const personListEl = document.getElementById("person-list");
@@ -178,87 +164,90 @@
         let currentPeople = [];
         let currentState = {};
         let isProcessingRotation = false; // Sperre
+        let db; // Datenbank-Referenz
 
         /**
          * Hilfsfunktion: Findet den Montag, 00:00 Uhr, der aktuellen Kalenderwoche.
          */
         function getMondayOfThisWeek(date) {
             const d = new Date(date);
-            // 0=Sonntag, 1=Montag, ..., 6=Samstag
             const day = d.getDay(); 
-            // Logik, um zum Montag zu kommen:
-            // Wenn Sonntag (0), gehe 6 Tage zurück.
-            // Wenn Montag (1), gehe 0 Tage zurück.
-            // Wenn Dienstag (2), gehe 1 Tag zurück.
             const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
             const monday = new Date(d.setDate(diff));
-            monday.setHours(0, 0, 0, 0); // Wichtig: Auf Mitternacht setzen
+            monday.setHours(0, 0, 0, 0);
             return monday;
         }
 
         // Listener für den globalen Status
-        configDoc.onSnapshot(async (doc) => {
-            console.log("Config Snapshot empfangen...");
-            if (isProcessingRotation) {
-                console.log("Rotation läuft, Snapshot ignoriert.");
-                return; 
-            }
+        function setupConfigListener() {
+            const configDocRef = doc(db, "config", "state");
+            onSnapshot(configDocRef, async (doc) => {
+                console.log("Config Snapshot empfangen...");
+                if (isProcessingRotation) {
+                    console.log("Rotation läuft, Snapshot ignoriert.");
+                    return; 
+                }
 
-            if (!doc.exists) {
-                console.error("Config-Dokument 'config/state' nicht gefunden! Initialisiere...");
-                loadingOverlay.innerHTML = "Initialisiere Putzplan...";
-                await configDoc.set({ 
-                    currentOrderIndex: 0,
-                    lastRotationTimestamp: new Date(0) 
-                });
-                return; // Snapshot wird neu ausgelöst
-            }
+                if (!doc.exists()) {
+                    console.error("Config-Dokument 'config/state' nicht gefunden! Initialisiere...");
+                    loadingOverlay.innerHTML = "Initialisiere Putzplan...";
+                    await setDoc(configDocRef, { 
+                        currentOrderIndex: 0,
+                        lastRotationTimestamp: Timestamp.fromDate(new Date(0)) // V10-Datumsobjekt
+                    });
+                    return; // Snapshot wird neu ausgelöst
+                }
 
-            currentState = doc.data();
+                currentState = doc.data();
 
-            // Initialisiere Datum, falls es fehlt.
-            if (!currentState.lastRotationTimestamp) {
-                console.log("Initialisiere lastRotationTimestamp...");
-                isProcessingRotation = true;
-                await configDoc.set({ lastRotationTimestamp: new Date(0) }, { merge: true });
-                isProcessingRotation = false;
-                return; // Snapshot wird neu ausgelöst
-            }
+                // Initialisiere Datum, falls es fehlt.
+                if (!currentState.lastRotationTimestamp) {
+                    console.log("Initialisiere lastRotationTimestamp...");
+                    isProcessingRotation = true;
+                    await setDoc(configDocRef, { lastRotationTimestamp: Timestamp.fromDate(new Date(0)) }, { merge: true });
+                    isProcessingRotation = false;
+                    return; // Snapshot wird neu ausgelöst
+                }
 
-            // --- KORRIGIERTE Auto-Rotations-Logik ---
-            const mondayOfThisWeek = getMondayOfThisWeek(new Date());
-            const lastRotationDate = currentState.lastRotationTimestamp.toDate();
+                // --- KORRIGIERTE Auto-Rotations-Logik ---
+                const mondayOfThisWeek = getMondayOfThisWeek(new Date());
+                const lastRotationDate = currentState.lastRotationTimestamp.toDate(); // In JS-Datum umwandeln
 
-            if (lastRotationDate.getTime() < mondayOfThisWeek.getTime()) {
-                console.log("Neue Kalenderwoche erkannt! Führe automatische Rotation durch...");
-                isProcessingRotation = true;
-                // 'false' = "erledigt", nicht "übersprungen"
-                await advanceWeek(false); 
-                isProcessingRotation = false; 
-                return; // Snapshot wird neu ausgelöst (und rendert dann)
-            }
-            
-            console.log("Rendere Personen...");
-            renderPeople();
-            
-            // Ladebildschirm ausblenden
-            loadingOverlay.style.display = "none";
-            mainContent.style.visibility = "visible";
+                if (lastRotationDate.getTime() < mondayOfThisWeek.getTime()) {
+                    console.log("Neue Kalenderwoche erkannt! Führe automatische Rotation durch...");
+                    isProcessingRotation = true;
+                    // 'false' = "erledigt", nicht "übersprungen"
+                    await advanceWeek(false); 
+                    isProcessingRotation = false; 
+                    return; // Snapshot wird neu ausgelöst (und rendert dann)
+                }
+                
+                console.log("Rendere Personen...");
+                renderPeople();
+                
+                // Ladebildschirm ausblenden
+                loadingOverlay.style.display = "none";
+                mainContent.style.visibility = "visible";
 
-        }, (error) => {
-            console.error("FEHLER beim Laden von configDoc:", error);
-            loadingOverlay.innerHTML = "Fehler: Konnte Status nicht laden. Prüfe Firestore-Regeln und Verbindung.";
-        });
+            }, (error) => {
+                console.error("FEHLER beim Laden von configDoc:", error);
+                loadingOverlay.innerHTML = `Fehler: Konnte Status nicht laden. (Code: ${error.code})`;
+            });
+        }
 
         // Listener für die Personen
-        peopleCollection.orderBy("order").onSnapshot((snapshot) => {
-            console.log("People Snapshot empfangen...");
-            currentPeople = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderPeople();
-        }, (error) => {
-            console.error("FEHLER beim Laden von peopleCollection:", error);
-            loadingOverlay.innerHTML = "Fehler: Konnte Personenliste nicht laden. Prüfe Firestore-Regeln und 'people'-Collection.";
-        });
+        function setupPeopleListener() {
+            const peopleCollectionRef = collection(db, "people");
+            const q = query(peopleCollectionRef, orderBy("order"));
+            onSnapshot(q, (snapshot) => {
+                console.log("People Snapshot empfangen...");
+                currentPeople = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderPeople();
+            }, (error) => {
+                console.error("FEHLER beim Laden von peopleCollection:", error);
+                loadingOverlay.innerHTML = `Fehler: Konnte Personenliste nicht laden. (Code: ${error.code})`;
+            });
+        }
 
         function renderPeople() {
             if (!currentState.hasOwnProperty('currentOrderIndex') || currentPeople.length === 0) {
@@ -312,7 +301,8 @@
                 // 1. Update den Skip-Status der aktuellen Person (falls übersprungen)
                 if (wasSkipped) {
                     const newSkipCount = (currentPerson.skipCount || 0) + 1;
-                    await peopleCollection.doc(currentPerson.id).update({ skipCount: newSkipCount });
+                    const personDocRef = doc(db, "people", currentPerson.id);
+                    await updateDoc(personDocRef, { skipCount: newSkipCount });
                 }
 
                 // 2. Finde die NÄCHSTE Person (mit "Vormerk"-Logik)
@@ -326,7 +316,8 @@
                     console.log("Nimm nächste Person aus Skip-Liste.");
                     nextPerson = skippedPeople[0];
                     const newSkipCount = nextPerson.skipCount - 1;
-                    await peopleCollection.doc(nextPerson.id).update({ skipCount: newSkipCount });
+                    const nextPersonDocRef = doc(db, "people", nextPerson.id);
+                    await updateDoc(nextPersonDocRef, { skipCount: newSkipCount });
                 } else {
                     console.log("Nimm nächste Person aus normaler Rotation.");
                     const nextIndex = (currentState.currentOrderIndex + 1) % currentPeople.length;
@@ -335,9 +326,10 @@
 
                 // 3. Setze den globalen Status auf die neue Person UND das NEUE DATUM ("jetzt")
                 if (nextPerson) {
-                    await configDoc.update({ 
+                    const configDocRef = doc(db, "config", "state");
+                    await updateDoc(configDocRef, { 
                         currentOrderIndex: nextPerson.order,
-                        lastRotationTimestamp: new Date() // WICHTIG! Setzt den Timer neu.
+                        lastRotationTimestamp: Timestamp.fromDate(new Date()) // V10-Datumsobjekt
                     });
                 }
             } catch (e) {
@@ -349,12 +341,11 @@
             isProcessingRotation = false;
         }
 
-        // Fange alle nicht behandelten Fehler ab
-        window.addEventListener('error', function(event) {
-            console.error('Globaler FEHLER:', event.message, event.filename, event.lineno);
-            loadingOverlay.innerHTML = `Ein unerwarteter Fehler ist aufgetreten: ${event.message}`;
-        });
-    </script>
-
-</body>
-</html>
+        // Haupt-Startfunktion
+        function main() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                
+                // Starte beide Listener
+                setupConfigListener();
