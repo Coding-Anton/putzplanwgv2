@@ -1,614 +1,586 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>index.html</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<style type="text/css">
-.s0 { color: #89ddff;}
-.s1 { color: #eeffff;}
-.s2 { color: #ffcb6b; font-style: italic;}
-.s3 { color: #f07178;}
-.s4 { color: #c3e88d;}
-.s5 { color: #eeffff;}
-.s6 { color: #616161; font-style: italic;}
-.s7 { color: #ffcb6b;}
-.s8 { color: #b2ccd6;}
-.s9 { color: #f78c6c;}
-.s10 { color: #c792ea; font-style: italic;}
-.s11 { color: #82aaff;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Cleaning Rota</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Harmonious Home -->
+    <!-- Application Structure Plan: Die Anwendung ist als interaktives Dashboard konzipiert, um die Nachteile eines statischen Plans zu überwinden. Der Fokus liegt auf der sofortigen Erkennbarkeit, wer aktuell für den Putzdienst verantwortlich ist. Eine prominente Anzeige des Namens und ein visuelles Hervorheben in der Rotationsliste stellen dies sicher. Die Aufgaben sind in thematische, umschaltbare Reiter (Wöchentlich, Täglich, Grundreinigung) gegliedert, was die Informationsarchitektur klar und nutzerfreundlich macht. Interaktive Checklisten für die wöchentlichen Aufgaben, gekoppelt mit einer Fortschrittsanzeige (Donut-Chart), gamifizieren den Prozess und geben direktes visuelles Feedback. Die neue Verlaufsfunktion wird über ein Modal integriert, um die Hauptansicht sauber zu halten, und nutzt localStorage zur Datenpersistenz. Die Exportfunktion macht die Daten extern nutzbar. Diese task-orientierte Struktur ist für die WG-Mitglieder intuitiver und motivierender als das blosse Ablesen eines Textdokuments. -->
+    <!-- Visualization & Content Choices: 
+        - Rotationsliste -> Geordnete Liste mit visueller Hervorhebung -> Interaktion über "Nächste Person"-Button -> Ziel: Klarheit über aktuellen & nächsten Dienst; Methode: HTML/CSS/JS.
+        - Wöchentliche Aufgaben -> Interaktive Checklisten pro Raum -> Interaktion durch Klick (abhaken) -> Ziel: Einfache Nachverfolgung des Fortschritts; Methode: HTML Forms/JS mit localStorage-Anbindung.
+        - Aufgabenfortschritt (Wöchentlich) -> Donut-Chart -> Interaktion: Dynamische Aktualisierung bei Klick auf Checkbox -> Ziel: Visuelle Motivation & schneller Überblick; Methode: Chart.js (Canvas).
+        - Aufgabenkategorien (Wöchentlich/Täglich/Grundreinigung) -> Reiter-Navigation -> Interaktion durch Klick auf Reiter -> Ziel: Strukturierte Darstellung; Methode: HTML/JS.
+        - Verlauf -> Modalfenster mit dynamischer Liste -> Interaktion: Öffnen/Schließen des Modals -> Ziel: Nachvollziehbarkeit vergangener Putzdienste; Methode: HTML/JS aus localStorage.
+        - Export -> Button im Modal -> Interaktion: Klick löst Download aus -> Ziel: Datenportabilität; Methode: JS Blob/File-Download.
+        - Alle Entscheidungen unterstützen die Dashboard-Struktur und vermeiden die Nachteile eines statischen Plans. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .tab-active {
+            background-color: #00796B;
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+        .tab-inactive {
+            background-color: #E0E0E0;
+            color: #4A4A4A;
+        }
+        .task-list-item input:checked + label {
+            text-decoration: line-through;
+            color: #9E9E9E;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 300px;
+        }
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.5);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #00796B;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body bgcolor="#212121">
-<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
-<tr><td><center>
-<font face="Arial, Helvetica" color="#000000">
-index.html</font>
-</center></td></tr></table>
-<pre><span class="s0">&lt;!DOCTYPE </span><span class="s2">html</span><span class="s0">&gt;</span>
-<span class="s0">&lt;</span><span class="s3">html </span><span class="s2">lang</span><span class="s4">=&quot;en&quot;</span><span class="s0">&gt;</span>
-<span class="s0">&lt;</span><span class="s3">head</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">meta </span><span class="s2">charset</span><span class="s4">=&quot;UTF-8&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">meta </span><span class="s2">name</span><span class="s4">=&quot;viewport&quot; </span><span class="s2">content</span><span class="s4">=&quot;width=device-width, initial-scale=1.0&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">title</span><span class="s0">&gt;</span><span class="s5">Interactive Cleaning Rota</span><span class="s0">&lt;/</span><span class="s3">title</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">script </span><span class="s2">src</span><span class="s4">=&quot;https://cdn.tailwindcss.com&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">script</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">script </span><span class="s2">src</span><span class="s4">=&quot;https://cdn.jsdelivr.net/npm/chart.js&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">script</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">link </span><span class="s2">rel</span><span class="s4">=&quot;preconnect&quot; </span><span class="s2">href</span><span class="s4">=&quot;https://fonts.googleapis.com&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">link </span><span class="s2">rel</span><span class="s4">=&quot;preconnect&quot; </span><span class="s2">href</span><span class="s4">=&quot;https://fonts.gstatic.com&quot; </span><span class="s2">crossorigin</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">link </span><span class="s2">href</span><span class="s4">=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap&quot; </span><span class="s2">rel</span><span class="s4">=&quot;stylesheet&quot;</span><span class="s0">&gt;</span>
-    <span class="s6">&lt;!-- Chosen Palette: Harmonious Home --&gt;</span>
-    <span class="s6">&lt;!-- Application Structure Plan: Die Anwendung ist als interaktives Dashboard konzipiert, um die Nachteile eines statischen Plans zu überwinden. Der Fokus liegt auf der sofortigen Erkennbarkeit, wer aktuell für den Putzdienst verantwortlich ist. Eine prominente Anzeige des Namens und ein visuelles Hervorheben in der Rotationsliste stellen dies sicher. Die Aufgaben sind in thematische, umschaltbare Reiter (Wöchentlich, Täglich, Grundreinigung) gegliedert, was die Informationsarchitektur klar und nutzerfreundlich macht. Interaktive Checklisten für die wöchentlichen Aufgaben, gekoppelt mit einer Fortschrittsanzeige (Donut-Chart), gamifizieren den Prozess und geben direktes visuelles Feedback. Die neue Verlaufsfunktion wird über ein Modal integriert, um die Hauptansicht sauber zu halten, und nutzt localStorage zur Datenpersistenz. Die Exportfunktion macht die Daten extern nutzbar. Diese task-orientierte Struktur ist für die WG-Mitglieder intuitiver und motivierender als das blosse Ablesen eines Textdokuments. --&gt;</span>
-    <span class="s6">&lt;!-- Visualization &amp; Content Choices:  
-        - Rotationsliste -&gt; Geordnete Liste mit visueller Hervorhebung -&gt; Interaktion über &quot;Nächste Person&quot;-Button -&gt; Ziel: Klarheit über aktuellen &amp; nächsten Dienst; Methode: HTML/CSS/JS. 
-        - Wöchentliche Aufgaben -&gt; Interaktive Checklisten pro Raum -&gt; Interaktion durch Klick (abhaken) -&gt; Ziel: Einfache Nachverfolgung des Fortschritts; Methode: HTML Forms/JS mit localStorage-Anbindung. 
-        - Aufgabenfortschritt (Wöchentlich) -&gt; Donut-Chart -&gt; Interaktion: Dynamische Aktualisierung bei Klick auf Checkbox -&gt; Ziel: Visuelle Motivation &amp; schneller Überblick; Methode: Chart.js (Canvas). 
-        - Aufgabenkategorien (Wöchentlich/Täglich/Grundreinigung) -&gt; Reiter-Navigation -&gt; Interaktion durch Klick auf Reiter -&gt; Ziel: Strukturierte Darstellung; Methode: HTML/JS. 
-        - Verlauf -&gt; Modalfenster mit dynamischer Liste -&gt; Interaktion: Öffnen/Schließen des Modals -&gt; Ziel: Nachvollziehbarkeit vergangener Putzdienste; Methode: HTML/JS aus localStorage. 
-        - Export -&gt; Button im Modal -&gt; Interaktion: Klick löst Download aus -&gt; Ziel: Datenportabilität; Methode: JS Blob/File-Download. 
-        - Alle Entscheidungen unterstützen die Dashboard-Struktur und vermeiden die Nachteile eines statischen Plans. --&gt;</span>
-    <span class="s6">&lt;!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. --&gt;</span>
-    <span class="s0">&lt;</span><span class="s3">style</span><span class="s0">&gt;</span>
-        <span class="s7">body </span><span class="s0">{</span>
-            <span class="s8">font-family</span><span class="s5">: </span><span class="s4">'Inter'</span><span class="s0">, </span><span class="s9">sans-serif</span><span class="s0">;</span>
-            <span class="s8">background-color</span><span class="s5">: </span><span class="s0">#FDFBF8;</span>
-            <span class="s8">color</span><span class="s5">: </span><span class="s0">#4A4A4A;</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">tab-active </span><span class="s0">{</span>
-            <span class="s8">background-color</span><span class="s5">: </span><span class="s0">#00796B;</span>
-            <span class="s8">color</span><span class="s5">: </span><span class="s0">#FFFFFF;</span>
-            <span class="s8">font-weight</span><span class="s5">: </span><span class="s9">500</span><span class="s0">;</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">tab-inactive </span><span class="s0">{</span>
-            <span class="s8">background-color</span><span class="s5">: </span><span class="s0">#E0E0E0;</span>
-            <span class="s8">color</span><span class="s5">: </span><span class="s0">#4A4A4A;</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">task-list-item input</span><span class="s5">:</span><span class="s10">checked </span><span class="s0">+ </span><span class="s7">label </span><span class="s0">{</span>
-            <span class="s8">text-decoration</span><span class="s5">: </span><span class="s9">line-through</span><span class="s0">;</span>
-            <span class="s8">color</span><span class="s5">: </span><span class="s0">#9E9E9E;</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">chart-container </span><span class="s0">{</span>
-            <span class="s8">position</span><span class="s5">: </span><span class="s9">relative</span><span class="s0">;</span>
-            <span class="s8">width</span><span class="s5">: </span><span class="s9">100</span><span class="s0">%;</span>
-            <span class="s8">max-width</span><span class="s5">: </span><span class="s9">300px</span><span class="s0">;</span>
-            <span class="s8">margin-left</span><span class="s5">: </span><span class="s9">auto</span><span class="s0">;</span>
-            <span class="s8">margin-right</span><span class="s5">: </span><span class="s9">auto</span><span class="s0">;</span>
-            <span class="s8">height</span><span class="s5">: </span><span class="s9">300px</span><span class="s0">;</span>
-            <span class="s8">max-height</span><span class="s5">: </span><span class="s9">300px</span><span class="s0">;</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">modal-backdrop </span><span class="s0">{</span>
-            <span class="s8">background-color</span><span class="s5">: </span><span class="s11">rgba</span><span class="s0">(</span><span class="s9">0</span><span class="s0">,</span><span class="s9">0</span><span class="s0">,</span><span class="s9">0</span><span class="s0">,</span><span class="s9">0.5</span><span class="s0">);</span>
-        <span class="s0">}</span>
-        <span class="s0">.</span><span class="s7">loading-spinner </span><span class="s0">{</span>
-            <span class="s8">border</span><span class="s5">: </span><span class="s9">4px solid </span><span class="s11">rgba</span><span class="s0">(</span><span class="s9">0</span><span class="s0">, </span><span class="s9">0</span><span class="s0">, </span><span class="s9">0</span><span class="s0">, </span><span class="s9">0.1</span><span class="s0">);</span>
-            <span class="s8">border-left-color</span><span class="s5">: </span><span class="s0">#00796B;</span>
-            <span class="s8">border-radius</span><span class="s5">: </span><span class="s9">50</span><span class="s0">%;</span>
-            <span class="s8">width</span><span class="s5">: </span><span class="s9">40px</span><span class="s0">;</span>
-            <span class="s8">height</span><span class="s5">: </span><span class="s9">40px</span><span class="s0">;</span>
-            <span class="s8">animation</span><span class="s5">: </span><span class="s9">spin 1s linear infinite</span><span class="s0">;</span>
-        <span class="s0">}</span>
-        <span class="s10">@keyframes </span><span class="s7">spin </span><span class="s0">{</span>
-            <span class="s7">to </span><span class="s0">{ </span><span class="s8">transform</span><span class="s5">: </span><span class="s11">rotate</span><span class="s0">(</span><span class="s9">360deg</span><span class="s0">); }</span>
-        <span class="s0">}</span>
-    <span class="s0">&lt;/</span><span class="s3">style</span><span class="s0">&gt;</span>
-<span class="s0">&lt;/</span><span class="s3">head</span><span class="s0">&gt;</span>
-<span class="s0">&lt;</span><span class="s3">body </span><span class="s2">class</span><span class="s4">=&quot;antialiased&quot;</span><span class="s0">&gt;</span>
+<body class="antialiased">
 
-    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;loading-overlay&quot; </span><span class="s2">class</span><span class="s4">=&quot;fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;loading-spinner&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;mt-4 text-gray-600&quot;</span><span class="s0">&gt;</span><span class="s5">Connecting to the rota...</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div class="loading-spinner"></div>
+        <p class="mt-4 text-gray-600">Connecting to the rota...</p>
+    </div>
 
-    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;container mx-auto p-4 md:p-8 max-w-4xl&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">header </span><span class="s2">class</span><span class="s4">=&quot;text-center mb-8&quot;</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">h1 </span><span class="s2">class</span><span class="s4">=&quot;text-4xl font-bold text-teal-800&quot;</span><span class="s0">&gt;</span><span class="s5">Shared Living Cleaning Rota</span><span class="s0">&lt;/</span><span class="s3">h1</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;text-lg mt-2 text-gray-600&quot;</span><span class="s0">&gt;</span><span class="s5">Your interactive plan for a tidy home!</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/</span><span class="s3">header</span><span class="s0">&gt;</span>
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-teal-800">Shared Living Cleaning Rota</h1>
+            <p class="text-lg mt-2 text-gray-600">Your interactive plan for a tidy home!</p>
+        </header>
 
-        <span class="s0">&lt;</span><span class="s3">main </span><span class="s2">class</span><span class="s4">=&quot;opacity-0 transition-opacity duration-500&quot; </span><span class="s2">id</span><span class="s4">=&quot;main-content&quot;</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">section </span><span class="s2">id</span><span class="s4">=&quot;rotation-section&quot; </span><span class="s2">class</span><span class="s4">=&quot;bg-white p-6 rounded-2xl shadow-lg mb-8&quot;</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">h2 </span><span class="s2">class</span><span class="s4">=&quot;text-2xl font-bold text-center mb-4 text-teal-700&quot;</span><span class="s0">&gt;</span><span class="s5">Whose turn is it this week?</span><span class="s0">&lt;/</span><span class="s3">h2</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;text-center p-4 bg-amber-100 border-l-4 border-amber-400 rounded-lg&quot;</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;text-lg text-gray-700&quot;</span><span class="s0">&gt;</span><span class="s5">Week from </span><span class="s0">&lt;</span><span class="s3">span </span><span class="s2">id</span><span class="s4">=&quot;current-week-start&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">span</span><span class="s0">&gt; </span><span class="s5">to </span><span class="s0">&lt;</span><span class="s3">span </span><span class="s2">id</span><span class="s4">=&quot;current-week-end&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">span</span><span class="s0">&gt;</span><span class="s5">:</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">id</span><span class="s4">=&quot;current-person&quot; </span><span class="s2">class</span><span class="s4">=&quot;text-3xl font-bold text-amber-800 my-2&quot;</span><span class="s0">&gt;</span><span class="s5">-</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+        <main class="opacity-0 transition-opacity duration-500" id="main-content">
+            <section id="rotation-section" class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                <h2 class="text-2xl font-bold text-center mb-4 text-teal-700">Whose turn is it this week?</h2>
+                <div class="text-center p-4 bg-amber-100 border-l-4 border-amber-400 rounded-lg">
+                    <p class="text-lg text-gray-700">Week from <span id="current-week-start"></span> to <span id="current-week-end"></span>:</p>
+                    <p id="current-person" class="text-3xl font-bold text-amber-800 my-2">-</p>
+                </div>
                 
-                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;mt-6&quot;</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">h3 </span><span class="s2">class</span><span class="s4">=&quot;text-lg font-semibold mb-3 text-center&quot;</span><span class="s0">&gt;</span><span class="s5">Rotation:</span><span class="s0">&lt;/</span><span class="s3">h3</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;text-center text-xs text-gray-500 mb-2&quot;</span><span class="s0">&gt;</span><span class="s5">(Click a name to swap the current turn)</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">ol </span><span class="s2">id</span><span class="s4">=&quot;rotation-list&quot; </span><span class="s2">class</span><span class="s4">=&quot;flex flex-wrap justify-center gap-2&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">ol</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-3 text-center">Rotation:</h3>
+                    <p class="text-center text-xs text-gray-500 mb-2">(Click a name to swap the current turn)</p>
+                    <ol id="rotation-list" class="flex flex-wrap justify-center gap-2"></ol>
+                </div>
 
-                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;flex flex-col sm:flex-row items-center justify-center gap-4 mt-6&quot;</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;next-person-btn&quot; </span><span class="s2">class</span><span class="s4">=&quot;w-full sm:w-auto bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md&quot;</span><span class="s0">&gt;</span>
-                        <span class="s5">Next Person &amp; Start Week →</span>
-                    <span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                     <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;show-history-btn&quot; </span><span class="s2">class</span><span class="s4">=&quot;w-full sm:w-auto bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300&quot;</span><span class="s0">&gt;</span>
-                        <span class="s5">Show History</span>
-                    <span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">section</span><span class="s0">&gt;</span>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+                    <button id="next-person-btn" class="w-full sm:w-auto bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
+                        Next Person & Start Week →
+                    </button>
+                     <button id="show-history-btn" class="w-full sm:w-auto bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">
+                        Show History
+                    </button>
+                </div>
+            </section>
 
-            <span class="s0">&lt;</span><span class="s3">section </span><span class="s2">id</span><span class="s4">=&quot;tasks-section&quot; </span><span class="s2">class</span><span class="s4">=&quot;bg-white p-6 rounded-2xl shadow-lg&quot;</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">h2 </span><span class="s2">class</span><span class="s4">=&quot;text-2xl font-bold text-center mb-6 text-teal-700&quot;</span><span class="s0">&gt;</span><span class="s5">Current Tasks</span><span class="s0">&lt;/</span><span class="s3">h2</span><span class="s0">&gt;</span>
+            <section id="tasks-section" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold text-center mb-6 text-teal-700">Current Tasks</h2>
                 
-                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;tabs&quot; </span><span class="s2">class</span><span class="s4">=&quot;flex justify-center mb-6 rounded-full p-1 bg-gray-200 w-full max-w-md mx-auto&quot;</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">data-tab</span><span class="s4">=&quot;weekly&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300&quot;</span><span class="s0">&gt;</span><span class="s5">Weekly</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">data-tab</span><span class="s4">=&quot;daily&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300&quot;</span><span class="s0">&gt;</span><span class="s5">Daily (Everyone)</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">data-tab</span><span class="s4">=&quot;monthly&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300&quot;</span><span class="s0">&gt;</span><span class="s5">Deep Clean</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+                <div id="tabs" class="flex justify-center mb-6 rounded-full p-1 bg-gray-200 w-full max-w-md mx-auto">
+                    <button data-tab="weekly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Weekly</button>
+                    <button data-tab="daily" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Daily (Everyone)</button>
+                    <button data-tab="monthly" class="tab-button w-1/3 py-2 px-4 rounded-full text-sm sm:text-base transition-colors duration-300">Deep Clean</button>
+                </div>
 
-                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;tab-content&quot;</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;weekly-tasks&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-pane&quot;</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;text-center mb-6 text-gray-600&quot;</span><span class="s0">&gt;</span><span class="s5">These tasks are for </span><span class="s0">&lt;</span><span class="s3">span </span><span class="s2">class</span><span class="s4">=&quot;font-bold&quot; </span><span class="s2">id</span><span class="s4">=&quot;current-person-tasks&quot;</span><span class="s0">&gt;</span><span class="s5">-</span><span class="s0">&lt;/</span><span class="s3">span</span><span class="s0">&gt; </span><span class="s5">to complete.</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;grid md:grid-cols-2 gap-8&quot;</span><span class="s0">&gt;</span>
-                            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;task-lists-container&quot; </span><span class="s2">class</span><span class="s4">=&quot;space-y-6&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;flex flex-col items-center justify-center&quot;</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">h3 </span><span class="s2">class</span><span class="s4">=&quot;text-lg font-semibold mb-4 text-center&quot;</span><span class="s0">&gt;</span><span class="s5">Progress</span><span class="s0">&lt;/</span><span class="s3">h3</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;chart-container&quot;</span><span class="s0">&gt;</span>
-                                    <span class="s0">&lt;</span><span class="s3">canvas </span><span class="s2">id</span><span class="s4">=&quot;progressChart&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">canvas</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                            <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;daily-tasks&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-pane hidden&quot;</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg&quot;</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">h3 </span><span class="s2">class</span><span class="s4">=&quot;text-xl font-bold text-teal-700 mb-4&quot;</span><span class="s0">&gt;</span><span class="s5">Daily Tasks for EVERYONE!</span><span class="s0">&lt;/</span><span class="s3">h3</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;mb-4 text-gray-600&quot;</span><span class="s0">&gt;</span><span class="s5">These small things are only fair and ensure a baseline of cleanliness is maintained.</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">ul </span><span class="s2">class</span><span class="s4">=&quot;list-disc list-inside space-y-2 text-gray-700&quot;</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Wash your own dishes, pots, and cutlery </span><span class="s0">&lt;</span><span class="s3">strong</span><span class="s0">&gt;</span><span class="s5">immediately</span><span class="s0">&lt;/</span><span class="s3">strong</span><span class="s0">&gt; </span><span class="s5">or put them in the dishwasher.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Briefly wipe down your work surface and the stove after cooking.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Put away your own shoes and jackets properly.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">In the bathroom, briefly rinse the sink after use and remove your own hair from the drain.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;/</span><span class="s3">ul</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;monthly-tasks&quot; </span><span class="s2">class</span><span class="s4">=&quot;tab-pane hidden&quot;</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg&quot;</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">h3 </span><span class="s2">class</span><span class="s4">=&quot;text-xl font-bold text-teal-700 mb-4&quot;</span><span class="s0">&gt;</span><span class="s5">Joint Deep Clean (every 2-3 months)</span><span class="s0">&lt;/</span><span class="s3">h3</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">class</span><span class="s4">=&quot;mb-4 text-gray-600&quot;</span><span class="s0">&gt;</span><span class="s5">It's best if we do these tasks all together on a weekend.</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;</span><span class="s3">ul </span><span class="s2">class</span><span class="s4">=&quot;list-disc list-inside space-y-2 text-gray-700&quot;</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Clean the inside of the refrigerator.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Take the glass bottles to the glass recycling container.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Clean the oven.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Clean the windows in the common areas.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                                <span class="s0">&lt;</span><span class="s3">li</span><span class="s0">&gt;</span><span class="s5">Wipe down doors and door frames.</span><span class="s0">&lt;/</span><span class="s3">li</span><span class="s0">&gt;</span>
-                           <span class="s0">&lt;/</span><span class="s3">ul</span><span class="s0">&gt;</span>
-                        <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">section</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/</span><span class="s3">main</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+                <div id="tab-content">
+                    <div id="weekly-tasks" class="tab-pane">
+                        <p class="text-center mb-6 text-gray-600">These tasks are for <span class="font-bold" id="current-person-tasks">-</span> to complete.</p>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div id="task-lists-container" class="space-y-6"></div>
+                            <div class="flex flex-col items-center justify-center">
+                                <h3 class="text-lg font-semibold mb-4 text-center">Progress</h3>
+                                <div class="chart-container">
+                                    <canvas id="progressChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="daily-tasks" class="tab-pane hidden">
+                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
+                           <h3 class="text-xl font-bold text-teal-700 mb-4">Daily Tasks for EVERYONE!</h3>
+                           <p class="mb-4 text-gray-600">These small things are only fair and ensure a baseline of cleanliness is maintained.</p>
+                           <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                <li>Wash your own dishes, pots, and cutlery <strong>immediately</strong> or put them in the dishwasher.</li>
+                                <li>Briefly wipe down your work surface and the stove after cooking.</li>
+                                <li>Put away your own shoes and jackets properly.</li>
+                                <li>In the bathroom, briefly rinse the sink after use and remove your own hair from the drain.</li>
+                           </ul>
+                        </div>
+                    </div>
+                    <div id="monthly-tasks" class="tab-pane hidden">
+                        <div class="max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg">
+                           <h3 class="text-xl font-bold text-teal-700 mb-4">Joint Deep Clean (every 2-3 months)</h3>
+                           <p class="mb-4 text-gray-600">It's best if we do these tasks all together on a weekend.</p>
+                           <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                <li>Clean the inside of the refrigerator.</li>
+                                <li>Take the glass bottles to the glass recycling container.</li>
+                                <li>Clean the oven.</li>
+                                <li>Clean the windows in the common areas.</li>
+                                <li>Wipe down doors and door frames.</li>
+                           </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
-    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;history-modal&quot; </span><span class="s2">class</span><span class="s4">=&quot;fixed inset-0 z-50 flex items-center justify-center p-4 hidden&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;fixed inset-0 modal-backdrop&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl z-10 transform transition-all max-h-[90vh] flex flex-col&quot;</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;flex justify-between items-center mb-4 pb-4 border-b&quot;</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">h2 </span><span class="s2">class</span><span class="s4">=&quot;text-2xl font-bold text-teal-700&quot;</span><span class="s0">&gt;</span><span class="s5">Cleaning History</span><span class="s0">&lt;/</span><span class="s3">h2</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;close-history-btn&quot; </span><span class="s2">class</span><span class="s4">=&quot;text-gray-500 hover:text-gray-800 text-3xl&quot;</span><span class="s0">&gt;</span><span class="s9">&amp;times;</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;history-content&quot; </span><span class="s2">class</span><span class="s4">=&quot;overflow-y-auto flex-grow pr-2&quot;</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;mt-6 pt-4 border-t flex justify-end&quot;</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;export-history-btn&quot; </span><span class="s2">class</span><span class="s4">=&quot;bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md&quot;</span><span class="s0">&gt;</span>
-                    <span class="s5">Export History</span>
-                <span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+    <div id="history-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="fixed inset-0 modal-backdrop"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl z-10 transform transition-all max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                <h2 class="text-2xl font-bold text-teal-700">Cleaning History</h2>
+                <button id="close-history-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="history-content" class="overflow-y-auto flex-grow pr-2">
+            </div>
+            <div class="mt-6 pt-4 border-t flex justify-end">
+                <button id="export-history-btn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-full hover:bg-teal-700 transition-colors duration-300 shadow-md">
+                    Export History
+                </button>
+            </div>
+        </div>
+    </div>
 
-    <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">id</span><span class="s4">=&quot;confirm-modal&quot; </span><span class="s2">class</span><span class="s4">=&quot;fixed inset-0 z-50 flex items-center justify-center p-4 hidden&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;fixed inset-0 modal-backdrop&quot;</span><span class="s0">&gt;&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md z-10 transform transition-all&quot;</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">h2 </span><span class="s2">id</span><span class="s4">=&quot;confirm-modal-title&quot; </span><span class="s2">class</span><span class="s4">=&quot;text-xl font-bold text-gray-800 mb-4&quot;</span><span class="s0">&gt;</span><span class="s5">Confirmation</span><span class="s0">&lt;/</span><span class="s3">h2</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">p </span><span class="s2">id</span><span class="s4">=&quot;confirm-modal-text&quot; </span><span class="s2">class</span><span class="s4">=&quot;text-gray-600 mb-6 leading-relaxed&quot;</span><span class="s0">&gt;</span><span class="s5">Are you sure?</span><span class="s0">&lt;/</span><span class="s3">p</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;</span><span class="s3">div </span><span class="s2">class</span><span class="s4">=&quot;flex justify-end gap-4&quot;</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;confirm-modal-no&quot; </span><span class="s2">class</span><span class="s4">=&quot;bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300&quot;</span><span class="s0">&gt;</span><span class="s5">Cancel</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-                <span class="s0">&lt;</span><span class="s3">button </span><span class="s2">id</span><span class="s4">=&quot;confirm-modal-yes&quot; </span><span class="s2">class</span><span class="s4">=&quot;bg-amber-500 text-white font-bold py-2 px-6 rounded-full hover:bg-amber-600 transition-colors duration-300 shadow-md&quot;</span><span class="s0">&gt;</span><span class="s5">Yes, Confirm</span><span class="s0">&lt;/</span><span class="s3">button</span><span class="s0">&gt;</span>
-            <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;/</span><span class="s3">div</span><span class="s0">&gt;</span>
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="fixed inset-0 modal-backdrop"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md z-10 transform transition-all">
+            <h2 id="confirm-modal-title" class="text-xl font-bold text-gray-800 mb-4">Confirmation</h2>
+            <p id="confirm-modal-text" class="text-gray-600 mb-6 leading-relaxed">Are you sure?</p>
+            <div class="flex justify-end gap-4">
+                <button id="confirm-modal-no" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-colors duration-300">Cancel</button>
+                <button id="confirm-modal-yes" class="bg-amber-500 text-white font-bold py-2 px-6 rounded-full hover:bg-amber-600 transition-colors duration-300 shadow-md">Yes, Confirm</button>
+            </div>
+        </div>
+    </div>
 
-    <span class="s0">&lt;</span><span class="s3">script </span><span class="s2">type</span><span class="s4">=&quot;module&quot;</span><span class="s0">&gt;</span>
-        <span class="s6">// Firebase SDKs</span>
-        <span class="s10">import </span><span class="s0">{ </span><span class="s1">initializeApp </span><span class="s0">} </span><span class="s1">from </span><span class="s4">&quot;https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js&quot;</span><span class="s0">;</span>
-        <span class="s10">import </span><span class="s0">{ </span><span class="s1">getFirestore</span><span class="s0">, </span><span class="s1">doc</span><span class="s0">, </span><span class="s1">onSnapshot</span><span class="s0">, </span><span class="s1">setDoc</span><span class="s0">, </span><span class="s1">updateDoc</span><span class="s0">, </span><span class="s1">runTransaction </span><span class="s0">} </span><span class="s1">from </span><span class="s4">&quot;https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js&quot;</span><span class="s0">;</span>
-        <span class="s10">import </span><span class="s0">{ </span><span class="s1">getAuth</span><span class="s0">, </span><span class="s1">signInAnonymously </span><span class="s0">} </span><span class="s1">from </span><span class="s4">&quot;https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js&quot;</span><span class="s0">;</span>
+    <script type="module">
+        // Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        <span class="s6">// === FIREBASE CONFIG INSERTED ===</span>
-        <span class="s10">const </span><span class="s1">firebaseConfig </span><span class="s0">= {</span>
-            <span class="s1">apiKey</span><span class="s0">: </span><span class="s4">&quot;AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg&quot;</span><span class="s0">,</span>
-            <span class="s1">authDomain</span><span class="s0">: </span><span class="s4">&quot;wg-putzplanv2.firebaseapp.com&quot;</span><span class="s0">,</span>
-            <span class="s1">projectId</span><span class="s0">: </span><span class="s4">&quot;wg-putzplanv2&quot;</span><span class="s0">,</span>
-            <span class="s1">storageBucket</span><span class="s0">: </span><span class="s4">&quot;wg-putzplanv2.appspot.com&quot;</span><span class="s0">,</span>
-            <span class="s1">messagingSenderId</span><span class="s0">: </span><span class="s4">&quot;12646186977&quot;</span><span class="s0">,</span>
-            <span class="s1">appId</span><span class="s0">: </span><span class="s4">&quot;1:12646186977:web:b3913f027908e2143f9ca0&quot;</span><span class="s0">,</span>
-            <span class="s1">measurementId</span><span class="s0">: </span><span class="s4">&quot;G-1767FJRQLQ&quot;</span>
-        <span class="s0">};</span>
-        <span class="s6">// ===================================</span>
+        // === FIREBASE CONFIG INSERTED ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyeReWBevS69MUdApFZAM6AQ_lulfO8Zg",
+            authDomain: "wg-putzplanv2.firebaseapp.com",
+            projectId: "wg-putzplanv2",
+            storageBucket: "wg-putzplanv2.appspot.com",
+            messagingSenderId: "12646186977",
+            appId: "1:12646186977:web:b3913f027908e2143f9ca0",
+            measurementId: "G-1767FJRQLQ"
+        };
+        // ===================================
         
-        <span class="s10">function </span><span class="s1">main</span><span class="s0">() {</span>
-            <span class="s10">const </span><span class="s1">app </span><span class="s0">= </span><span class="s1">initializeApp</span><span class="s0">(</span><span class="s1">firebaseConfig</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">db </span><span class="s0">= </span><span class="s1">getFirestore</span><span class="s0">(</span><span class="s1">app</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">auth </span><span class="s0">= </span><span class="s1">getAuth</span><span class="s0">(</span><span class="s1">app</span><span class="s0">);</span>
+        function main() {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
             
-            <span class="s10">const </span><span class="s1">stateDocRef </span><span class="s0">= </span><span class="s1">doc</span><span class="s0">(</span><span class="s1">db</span><span class="s0">, </span><span class="s4">&quot;rota&quot;</span><span class="s0">, </span><span class="s4">&quot;appState&quot;</span><span class="s0">);</span>
+            const stateDocRef = doc(db, "rota", "appState");
 
-            <span class="s10">const </span><span class="s1">names </span><span class="s0">= [</span><span class="s4">'Jakob'</span><span class="s0">, </span><span class="s4">'Annamaria'</span><span class="s0">, </span><span class="s4">'Fabiana'</span><span class="s0">, </span><span class="s4">'Anton'</span><span class="s0">, </span><span class="s4">'Furkan'</span><span class="s0">];</span>
-            <span class="s10">const </span><span class="s1">weeklyTasks </span><span class="s0">= {</span>
-                <span class="s4">'Kitchen'</span><span class="s0">: [</span><span class="s4">'Thoroughly clean countertops &amp; sink'</span><span class="s0">, </span><span class="s4">'Clean stove / hob'</span><span class="s0">, </span><span class="s4">'Wipe down kitchen fronts &amp; appliance exteriors (remove fingerprints)'</span><span class="s0">, </span><span class="s4">'Empty all bins (general, paper) &amp; wipe if necessary'</span><span class="s0">, </span><span class="s4">'Sweep &amp; then mop the floor'</span><span class="s0">],</span>
-                <span class="s4">'Bathroom'</span><span class="s0">: [</span><span class="s4">'Clean the two sinks and the large mirror'</span><span class="s0">, </span><span class="s4">'Clean shower / bathtub and fittings'</span><span class="s0">, </span><span class="s4">'Dust and wipe down the shelf'</span><span class="s0">, </span><span class="s4">'Sweep &amp; mop the floor'</span><span class="s0">],</span>
-                <span class="s4">'Separate WC'</span><span class="s0">: [</span><span class="s4">'Thoroughly clean toilet inside and out'</span><span class="s0">, </span><span class="s4">'Clean the sink'</span><span class="s0">, </span><span class="s4">'Sweep &amp; mop the floor'</span><span class="s0">, </span><span class="s4">'Refill toilet paper and soap if needed'</span><span class="s0">],</span>
-                <span class="s4">'Living Area / Hallway'</span><span class="s0">: [</span><span class="s4">'Dust shelves, TV, and other surfaces'</span><span class="s0">, </span><span class="s4">'Tidy up common area (fold blankets, put away magazines, fluff cushions)'</span><span class="s0">, </span><span class="s4">'Thoroughly sweep/vacuum the entire floor and mop if necessary'</span><span class="s0">]</span>
-            <span class="s0">};</span>
+            const names = ['Anton', 'Saurav', 'Fabiana', 'Annie', 'Pablo'];
+            const weeklyTasks = {
+                'Kitchen': ['Thoroughly clean countertops & sink', 'Clean stove / hob', 'Wipe down kitchen fronts & appliance exteriors (remove fingerprints)', 'Empty all bins (general, paper) & wipe if necessary', 'Sweep & then mop the floor'],
+                'Bathroom': ['Clean the two sinks and the large mirror', 'Clean shower / bathtub and fittings', 'Dust and wipe down the shelf', 'Sweep & mop the floor'],
+                'Separate WC': ['Thoroughly clean toilet inside and out', 'Clean the sink', 'Sweep & mop the floor', 'Refill toilet paper and soap if needed'],
+                'Living Area / Hallway': ['Dust shelves, TV, and other surfaces', 'Tidy up common area (fold blankets, put away magazines, fluff cushions)', 'Thoroughly sweep/vacuum the entire floor and mop if necessary']
+            };
             
-            <span class="s10">let </span><span class="s1">totalWeeklyTasks </span><span class="s0">= </span><span class="s1">Object</span><span class="s0">.</span><span class="s1">values</span><span class="s0">(</span><span class="s1">weeklyTasks</span><span class="s0">).</span><span class="s1">flat</span><span class="s0">().</span><span class="s1">length</span><span class="s0">;</span>
-            <span class="s10">let </span><span class="s1">appState </span><span class="s0">= {};</span>
-            <span class="s10">let </span><span class="s1">progressChart</span><span class="s0">;</span>
-            <span class="s10">let </span><span class="s1">confirmAction </span><span class="s0">= </span><span class="s10">null</span><span class="s0">;</span>
-            <span class="s10">let </span><span class="s1">unsubscribe</span><span class="s0">;</span>
+            let totalWeeklyTasks = Object.values(weeklyTasks).flat().length;
+            let appState = {};
+            let progressChart;
+            let confirmAction = null;
+            let unsubscribe;
 
-            <span class="s10">const </span><span class="s1">loadingOverlay </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'loading-overlay'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">mainContent </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'main-content'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">currentPersonEl </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'current-person'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">rotationListEl </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'rotation-list'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">nextPersonBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'next-person-btn'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">taskListsContainer </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'task-lists-container'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">currentPersonTasksEls </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">querySelectorAll</span><span class="s0">(</span><span class="s4">'#current-person-tasks'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">tabs </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">querySelectorAll</span><span class="s0">(</span><span class="s4">'.tab-button'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">tabPanes </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">querySelectorAll</span><span class="s0">(</span><span class="s4">'.tab-pane'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">weekStartEl </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'current-week-start'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">weekEndEl </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'current-week-end'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">historyModal </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'history-modal'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">showHistoryBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'show-history-btn'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">closeHistoryBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'close-history-btn'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">exportHistoryBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'export-history-btn'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">historyContent </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'history-content'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">confirmModal </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'confirm-modal'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">confirmModalTitle </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'confirm-modal-title'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">confirmModalText </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'confirm-modal-text'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">confirmModalYesBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'confirm-modal-yes'</span><span class="s0">);</span>
-            <span class="s10">const </span><span class="s1">confirmModalNoBtn </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'confirm-modal-no'</span><span class="s0">);</span>
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const mainContent = document.getElementById('main-content');
+            const currentPersonEl = document.getElementById('current-person');
+            const rotationListEl = document.getElementById('rotation-list');
+            const nextPersonBtn = document.getElementById('next-person-btn');
+            const taskListsContainer = document.getElementById('task-lists-container');
+            const currentPersonTasksEls = document.querySelectorAll('#current-person-tasks');
+            const tabs = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            const weekStartEl = document.getElementById('current-week-start');
+            const weekEndEl = document.getElementById('current-week-end');
+            const historyModal = document.getElementById('history-modal');
+            const showHistoryBtn = document.getElementById('show-history-btn');
+            const closeHistoryBtn = document.getElementById('close-history-btn');
+            const exportHistoryBtn = document.getElementById('export-history-btn');
+            const historyContent = document.getElementById('history-content');
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmModalTitle = document.getElementById('confirm-modal-title');
+            const confirmModalText = document.getElementById('confirm-modal-text');
+            const confirmModalYesBtn = document.getElementById('confirm-modal-yes');
+            const confirmModalNoBtn = document.getElementById('confirm-modal-no');
 
-            <span class="s10">function </span><span class="s1">getWeekId</span><span class="s0">(</span><span class="s1">date</span><span class="s0">) {</span>
-                <span class="s10">const </span><span class="s1">d </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">Date</span><span class="s0">.</span><span class="s1">UTC</span><span class="s0">(</span><span class="s1">date</span><span class="s0">.</span><span class="s1">getFullYear</span><span class="s0">(), </span><span class="s1">date</span><span class="s0">.</span><span class="s1">getMonth</span><span class="s0">(), </span><span class="s1">date</span><span class="s0">.</span><span class="s1">getDate</span><span class="s0">()));</span>
-                <span class="s10">const </span><span class="s1">dayNum </span><span class="s0">= </span><span class="s1">d</span><span class="s0">.</span><span class="s1">getUTCDay</span><span class="s0">() || </span><span class="s9">7</span><span class="s0">;</span>
-                <span class="s1">d</span><span class="s0">.</span><span class="s1">setUTCDate</span><span class="s0">(</span><span class="s1">d</span><span class="s0">.</span><span class="s1">getUTCDate</span><span class="s0">() + </span><span class="s9">4 </span><span class="s0">- </span><span class="s1">dayNum</span><span class="s0">);</span>
-                <span class="s10">const </span><span class="s1">yearStart </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">Date</span><span class="s0">.</span><span class="s1">UTC</span><span class="s0">(</span><span class="s1">d</span><span class="s0">.</span><span class="s1">getUTCFullYear</span><span class="s0">(), </span><span class="s9">0</span><span class="s0">, </span><span class="s9">1</span><span class="s0">));</span>
-                <span class="s10">const </span><span class="s1">weekNo </span><span class="s0">= </span><span class="s1">Math</span><span class="s0">.</span><span class="s1">ceil</span><span class="s0">((((</span><span class="s1">d </span><span class="s0">- </span><span class="s1">yearStart</span><span class="s0">) / </span><span class="s9">86400000</span><span class="s0">) + </span><span class="s9">1</span><span class="s0">) / </span><span class="s9">7</span><span class="s0">);</span>
-                <span class="s10">return </span><span class="s4">`</span><span class="s1">$</span><span class="s0">{</span><span class="s1">d</span><span class="s0">.</span><span class="s1">getUTCFullYear</span><span class="s0">()}</span><span class="s4">-W</span><span class="s1">$</span><span class="s0">{</span><span class="s1">String</span><span class="s0">(</span><span class="s1">weekNo</span><span class="s0">).</span><span class="s1">padStart</span><span class="s0">(</span><span class="s9">2</span><span class="s0">, </span><span class="s4">'0'</span><span class="s0">)}</span><span class="s4">`</span><span class="s0">;</span>
-            <span class="s0">}</span>
+            function getWeekId(date) {
+                const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                const dayNum = d.getUTCDay() || 7;
+                d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+            }
 
-            <span class="s10">function </span><span class="s1">getWeekDateRange</span><span class="s0">(</span><span class="s1">date</span><span class="s0">) {</span>
-                <span class="s10">const </span><span class="s1">start </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">date</span><span class="s0">);</span>
-                <span class="s1">start</span><span class="s0">.</span><span class="s1">setDate</span><span class="s0">(</span><span class="s1">start</span><span class="s0">.</span><span class="s1">getDate</span><span class="s0">() - </span><span class="s1">start</span><span class="s0">.</span><span class="s1">getDay</span><span class="s0">() + (</span><span class="s1">start</span><span class="s0">.</span><span class="s1">getDay</span><span class="s0">() === </span><span class="s9">0 </span><span class="s0">? -</span><span class="s9">6 </span><span class="s0">: </span><span class="s9">1</span><span class="s0">));</span>
-                <span class="s10">const </span><span class="s1">end </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">start</span><span class="s0">);</span>
-                <span class="s1">end</span><span class="s0">.</span><span class="s1">setDate</span><span class="s0">(</span><span class="s1">start</span><span class="s0">.</span><span class="s1">getDate</span><span class="s0">() + </span><span class="s9">6</span><span class="s0">);</span>
-                <span class="s10">const </span><span class="s1">options </span><span class="s0">= { </span><span class="s1">day</span><span class="s0">: </span><span class="s4">'2-digit'</span><span class="s0">, </span><span class="s1">month</span><span class="s0">: </span><span class="s4">'2-digit'</span><span class="s0">, </span><span class="s1">year</span><span class="s0">: </span><span class="s4">'numeric' </span><span class="s0">};</span>
-                <span class="s10">return </span><span class="s0">{</span>
-                    <span class="s1">start</span><span class="s0">: </span><span class="s1">start</span><span class="s0">.</span><span class="s1">toLocaleDateString</span><span class="s0">(</span><span class="s4">'en-GB'</span><span class="s0">, </span><span class="s1">options</span><span class="s0">),</span>
-                    <span class="s1">end</span><span class="s0">: </span><span class="s1">end</span><span class="s0">.</span><span class="s1">toLocaleDateString</span><span class="s0">(</span><span class="s4">'en-GB'</span><span class="s0">, </span><span class="s1">options</span><span class="s0">)</span>
-                <span class="s0">};</span>
-            <span class="s0">}</span>
+            function getWeekDateRange(date) {
+                const start = new Date(date);
+                start.setDate(start.getDate() - start.getDay() + (start.getDay() === 0 ? -6 : 1));
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                return {
+                    start: start.toLocaleDateString('en-GB', options),
+                    end: end.toLocaleDateString('en-GB', options)
+                };
+            }
             
-            <span class="s1">async </span><span class="s10">function </span><span class="s1">updateFirestoreState</span><span class="s0">(</span><span class="s1">newState</span><span class="s0">) {</span>
-                 <span class="s10">try </span><span class="s0">{</span>
-                    <span class="s0">await </span><span class="s1">setDoc</span><span class="s0">(</span><span class="s1">stateDocRef</span><span class="s0">, </span><span class="s1">newState</span><span class="s0">, { </span><span class="s1">merge</span><span class="s0">: </span><span class="s10">true </span><span class="s0">});</span>
-                <span class="s0">} </span><span class="s10">catch </span><span class="s0">(</span><span class="s1">error</span><span class="s0">) {</span>
-                    <span class="s1">console</span><span class="s0">.</span><span class="s1">error</span><span class="s0">(</span><span class="s4">&quot;Error updating Firestore: &quot;</span><span class="s0">, </span><span class="s1">error</span><span class="s0">);</span>
-                    <span class="s1">alert</span><span class="s0">(</span><span class="s4">&quot;Could not save changes. Please check your connection and try again.&quot;</span><span class="s0">);</span>
-                <span class="s0">}</span>
-            <span class="s0">}</span>
+            async function updateFirestoreState(newState) {
+                 try {
+                    await setDoc(stateDocRef, newState, { merge: true });
+                } catch (error) {
+                    console.error("Error updating Firestore: ", error);
+                    alert("Could not save changes. Please check your connection and try again.");
+                }
+            }
 
-            <span class="s10">function </span><span class="s1">createCheckboxes</span><span class="s0">() {</span>
-                <span class="s1">taskListsContainer</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">''</span><span class="s0">;</span>
-                <span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks </span><span class="s0">= </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks </span><span class="s0">|| {};</span>
+            function createCheckboxes() {
+                taskListsContainer.innerHTML = '';
+                appState.currentWeekTasks = appState.currentWeekTasks || {};
 
-                <span class="s10">for </span><span class="s0">(</span><span class="s10">const </span><span class="s1">area </span><span class="s10">in </span><span class="s1">weeklyTasks</span><span class="s0">) {</span>
-                    <span class="s10">const </span><span class="s1">areaContainer </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'div'</span><span class="s0">);</span>
-                    <span class="s1">areaContainer</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'bg-gray-50 p-4 rounded-lg'</span><span class="s0">;</span>
-                    <span class="s10">const </span><span class="s1">title </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'h4'</span><span class="s0">);</span>
-                    <span class="s1">title</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'text-lg font-semibold mb-3 text-teal-800 border-b pb-2'</span><span class="s0">;</span>
-                    <span class="s1">title</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">area</span><span class="s0">;</span>
-                    <span class="s1">areaContainer</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">title</span><span class="s0">);</span>
+                for (const area in weeklyTasks) {
+                    const areaContainer = document.createElement('div');
+                    areaContainer.className = 'bg-gray-50 p-4 rounded-lg';
+                    const title = document.createElement('h4');
+                    title.className = 'text-lg font-semibold mb-3 text-teal-800 border-b pb-2';
+                    title.textContent = area;
+                    areaContainer.appendChild(title);
 
-                    <span class="s10">const </span><span class="s1">list </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'ul'</span><span class="s0">);</span>
-                    <span class="s1">list</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'space-y-2'</span><span class="s0">;</span>
-                    <span class="s1">weeklyTasks</span><span class="s0">[</span><span class="s1">area</span><span class="s0">].</span><span class="s1">forEach</span><span class="s0">((</span><span class="s1">task</span><span class="s0">, </span><span class="s1">index</span><span class="s0">) =&gt; {</span>
-                        <span class="s10">const </span><span class="s1">li </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'li'</span><span class="s0">);</span>
-                        <span class="s1">li</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'task-list-item flex items-center'</span><span class="s0">;</span>
-                        <span class="s10">const </span><span class="s1">checkboxId </span><span class="s0">= </span><span class="s4">`</span><span class="s1">$</span><span class="s0">{</span><span class="s1">area</span><span class="s0">.</span><span class="s1">replace</span><span class="s0">(</span><span class="s4">/\s+/g</span><span class="s0">, </span><span class="s4">'-'</span><span class="s0">)}</span><span class="s4">-</span><span class="s1">$</span><span class="s0">{</span><span class="s1">index</span><span class="s0">}</span><span class="s4">`</span><span class="s0">;</span>
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-2';
+                    weeklyTasks[area].forEach((task, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'task-list-item flex items-center';
+                        const checkboxId = `${area.replace(/\s+/g, '-')}-${index}`;
                         
-                        <span class="s10">const </span><span class="s1">checkbox </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'input'</span><span class="s0">);</span>
-                        <span class="s1">checkbox</span><span class="s0">.</span><span class="s1">type </span><span class="s0">= </span><span class="s4">'checkbox'</span><span class="s0">;</span>
-                        <span class="s1">checkbox</span><span class="s0">.</span><span class="s1">id </span><span class="s0">= </span><span class="s1">checkboxId</span><span class="s0">;</span>
-                        <span class="s1">checkbox</span><span class="s0">.</span><span class="s1">checked </span><span class="s0">= </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks</span><span class="s0">[</span><span class="s1">checkboxId</span><span class="s0">] || </span><span class="s10">false</span><span class="s0">;</span>
-                        <span class="s1">checkbox</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500'</span><span class="s0">;</span>
-                        <span class="s1">checkbox</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'change'</span><span class="s0">, </span><span class="s1">async </span><span class="s0">(</span><span class="s1">e</span><span class="s0">) =&gt; {</span>
-                            <span class="s10">const </span><span class="s1">newTasks </span><span class="s0">= { </span><span class="s1">...appState</span><span class="s0">.</span><span class="s1">currentWeekTasks</span><span class="s0">, [</span><span class="s1">checkboxId</span><span class="s0">]: </span><span class="s1">e</span><span class="s0">.</span><span class="s1">target</span><span class="s0">.</span><span class="s1">checked </span><span class="s0">};</span>
-                            <span class="s0">await </span><span class="s1">updateFirestoreState</span><span class="s0">({ </span><span class="s1">currentWeekTasks</span><span class="s0">: </span><span class="s1">newTasks </span><span class="s0">});</span>
-                        <span class="s0">});</span>
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = checkboxId;
+                        checkbox.checked = appState.currentWeekTasks[checkboxId] || false;
+                        checkbox.className = 'h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500';
+                        checkbox.addEventListener('change', async (e) => {
+                            const newTasks = { ...appState.currentWeekTasks, [checkboxId]: e.target.checked };
+                            await updateFirestoreState({ currentWeekTasks: newTasks });
+                        });
                         
-                        <span class="s10">const </span><span class="s1">label </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'label'</span><span class="s0">);</span>
-                        <span class="s1">label</span><span class="s0">.</span><span class="s1">htmlFor </span><span class="s0">= </span><span class="s1">checkboxId</span><span class="s0">;</span>
-                        <span class="s1">label</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">task</span><span class="s0">;</span>
-                        <span class="s1">label</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'ml-3 block text-sm text-gray-700'</span><span class="s0">;</span>
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.textContent = task;
+                        label.className = 'ml-3 block text-sm text-gray-700';
 
-                        <span class="s1">li</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">checkbox</span><span class="s0">);</span>
-                        <span class="s1">li</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">label</span><span class="s0">);</span>
-                        <span class="s1">list</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">li</span><span class="s0">);</span>
-                    <span class="s0">});</span>
-                    <span class="s1">areaContainer</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">list</span><span class="s0">);</span>
-                    <span class="s1">taskListsContainer</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">areaContainer</span><span class="s0">);</span>
-                <span class="s0">}</span>
-            <span class="s0">}</span>
+                        li.appendChild(checkbox);
+                        li.appendChild(label);
+                        list.appendChild(li);
+                    });
+                    areaContainer.appendChild(list);
+                    taskListsContainer.appendChild(areaContainer);
+                }
+            }
 
-            <span class="s10">function </span><span class="s1">updateDisplay</span><span class="s0">() {</span>
-                <span class="s10">if </span><span class="s0">(!</span><span class="s1">appState </span><span class="s0">|| </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentIndex </span><span class="s0">=== </span><span class="s1">undefined</span><span class="s0">) {</span>
-                    <span class="s10">return</span><span class="s0">;</span>
-                <span class="s0">}</span>
+            function updateDisplay() {
+                if (!appState || appState.currentIndex === undefined) {
+                    return;
+                }
                 
-                <span class="s10">const </span><span class="s1">currentName </span><span class="s0">= </span><span class="s1">names</span><span class="s0">[</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentIndex</span><span class="s0">];</span>
-                <span class="s1">currentPersonEl</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">currentName</span><span class="s0">;</span>
-                <span class="s1">currentPersonTasksEls</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">el </span><span class="s0">=&gt; </span><span class="s1">el</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">currentName</span><span class="s0">);</span>
+                const currentName = names[appState.currentIndex];
+                currentPersonEl.textContent = currentName;
+                currentPersonTasksEls.forEach(el => el.textContent = currentName);
 
-                <span class="s10">const </span><span class="s1">range </span><span class="s0">= </span><span class="s1">getWeekDateRange</span><span class="s0">(</span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekStartDate</span><span class="s0">));</span>
-                <span class="s1">weekStartEl</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">range</span><span class="s0">.</span><span class="s1">start</span><span class="s0">;</span>
-                <span class="s1">weekEndEl</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">range</span><span class="s0">.</span><span class="s1">end</span><span class="s0">;</span>
+                const range = getWeekDateRange(new Date(appState.currentWeekStartDate));
+                weekStartEl.textContent = range.start;
+                weekEndEl.textContent = range.end;
 
-                <span class="s1">rotationListEl</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">''</span><span class="s0">;</span>
-                <span class="s1">names</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">((</span><span class="s1">name</span><span class="s0">, </span><span class="s1">index</span><span class="s0">) =&gt; {</span>
-                    <span class="s10">const </span><span class="s1">li </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'li'</span><span class="s0">);</span>
-                    <span class="s1">li</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">name</span><span class="s0">;</span>
+                rotationListEl.innerHTML = '';
+                names.forEach((name, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
                     
-                    <span class="s10">const </span><span class="s1">isActive </span><span class="s0">= </span><span class="s1">index </span><span class="s0">=== </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentIndex</span><span class="s0">;</span>
-                    <span class="s1">li</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">`py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 </span><span class="s1">$</span><span class="s0">{</span><span class="s1">isActive </span><span class="s0">? </span><span class="s4">'bg-amber-400 text-amber-900 shadow' </span><span class="s0">: </span><span class="s4">'bg-gray-200 text-gray-600 cursor-pointer hover:bg-amber-200'</span><span class="s0">}</span><span class="s4">`</span><span class="s0">;</span>
+                    const isActive = index === appState.currentIndex;
+                    li.className = `py-1 px-3 rounded-full text-sm font-medium transition-all duration-300 ${isActive ? 'bg-amber-400 text-amber-900 shadow' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-amber-200'}`;
                     
-                    <span class="s10">if </span><span class="s0">(!</span><span class="s1">isActive</span><span class="s0">) {</span>
-                        <span class="s1">li</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; {</span>
-                            <span class="s1">showConfirmModal</span><span class="s0">(</span>
-                                <span class="s4">'Swap Duty?'</span><span class="s0">,</span>
-                                <span class="s4">`Do you want to switch to &lt;strong&gt;</span><span class="s1">$</span><span class="s0">{</span><span class="s1">name</span><span class="s0">}</span><span class="s4">&lt;/strong&gt;?&lt;br&gt;&lt;br&gt;&lt;span class=&quot;text-sm text-red-600&quot;&gt;The current week's progress will be reset and NOT saved in the history.&lt;/span&gt;`</span><span class="s0">,</span>
-                                <span class="s4">'Yes, Swap'</span><span class="s0">,</span>
-                                <span class="s1">async </span><span class="s0">() =&gt; {</span>
-                                    <span class="s10">const </span><span class="s1">newState </span><span class="s0">= { </span><span class="s1">...appState</span><span class="s0">, </span><span class="s1">currentIndex</span><span class="s0">: </span><span class="s1">index</span><span class="s0">, </span><span class="s1">currentWeekTasks</span><span class="s0">: {} };</span>
-                                    <span class="s0">await </span><span class="s1">updateFirestoreState</span><span class="s0">(</span><span class="s1">newState</span><span class="s0">);</span>
-                                <span class="s0">}</span>
-                            <span class="s0">);</span>
-                        <span class="s0">});</span>
-                    <span class="s0">}</span>
-                    <span class="s1">rotationListEl</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">li</span><span class="s0">);</span>
-                <span class="s0">});</span>
+                    if (!isActive) {
+                        li.addEventListener('click', () => {
+                            showConfirmModal(
+                                'Swap Duty?',
+                                `Do you want to switch to <strong>${name}</strong>?<br><br><span class="text-sm text-red-600">The current week's progress will be reset and NOT saved in the history.</span>`,
+                                'Yes, Swap',
+                                async () => {
+                                    const newState = { ...appState, currentIndex: index, currentWeekTasks: {} };
+                                    await updateFirestoreState(newState);
+                                }
+                            );
+                        });
+                    }
+                    rotationListEl.appendChild(li);
+                });
                 
-                <span class="s1">createCheckboxes</span><span class="s0">();</span>
-                <span class="s10">if </span><span class="s0">(</span><span class="s1">progressChart</span><span class="s0">) </span><span class="s1">updateChart</span><span class="s0">();</span>
+                createCheckboxes();
+                if (progressChart) updateChart();
 
-                <span class="s1">loadingOverlay</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">add</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">);</span>
-                <span class="s1">mainContent</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">remove</span><span class="s0">(</span><span class="s4">'opacity-0'</span><span class="s0">);</span>
-            <span class="s0">}</span>
+                loadingOverlay.classList.add('hidden');
+                mainContent.classList.remove('opacity-0');
+            }
             
-            <span class="s1">async </span><span class="s10">function </span><span class="s1">nextPerson</span><span class="s0">(</span><span class="s1">isAutoAdvance </span><span class="s0">= </span><span class="s10">false</span><span class="s0">) {</span>
-                <span class="s10">const </span><span class="s1">proceed </span><span class="s0">= </span><span class="s1">async </span><span class="s0">() =&gt; {</span>
-                    <span class="s10">const </span><span class="s1">completedTasksCount </span><span class="s0">= </span><span class="s1">Object</span><span class="s0">.</span><span class="s1">values</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks </span><span class="s0">|| {}).</span><span class="s1">filter</span><span class="s0">(</span><span class="s1">Boolean</span><span class="s0">).</span><span class="s1">length</span><span class="s0">;</span>
-                    <span class="s10">const </span><span class="s1">historyEntry </span><span class="s0">= {</span>
-                        <span class="s1">person</span><span class="s0">: </span><span class="s1">names</span><span class="s0">[</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentIndex</span><span class="s0">],</span>
-                        <span class="s1">dateRange</span><span class="s0">: </span><span class="s1">getWeekDateRange</span><span class="s0">(</span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekStartDate</span><span class="s0">)),</span>
-                        <span class="s1">tasksCompleted</span><span class="s0">: </span><span class="s1">completedTasksCount</span><span class="s0">,</span>
-                        <span class="s1">totalTasks</span><span class="s0">: </span><span class="s1">totalWeeklyTasks</span>
-                    <span class="s0">};</span>
+            async function nextPerson(isAutoAdvance = false) {
+                const proceed = async () => {
+                    const completedTasksCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
+                    const historyEntry = {
+                        person: names[appState.currentIndex],
+                        dateRange: getWeekDateRange(new Date(appState.currentWeekStartDate)),
+                        tasksCompleted: completedTasksCount,
+                        totalTasks: totalWeeklyTasks
+                    };
                     
-                    <span class="s10">const </span><span class="s1">newHistory </span><span class="s0">= [</span><span class="s1">...</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">history </span><span class="s0">|| []), </span><span class="s1">historyEntry</span><span class="s0">];</span>
-                    <span class="s10">const </span><span class="s1">newIndex </span><span class="s0">= (</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentIndex </span><span class="s0">+ </span><span class="s9">1</span><span class="s0">) % </span><span class="s1">names</span><span class="s0">.</span><span class="s1">length</span><span class="s0">;</span>
+                    const newHistory = [...(appState.history || []), historyEntry];
+                    const newIndex = (appState.currentIndex + 1) % names.length;
 
-                    <span class="s10">const </span><span class="s1">newState </span><span class="s0">= {</span>
-                        <span class="s1">history</span><span class="s0">: </span><span class="s1">newHistory</span><span class="s0">,</span>
-                        <span class="s1">currentIndex</span><span class="s0">: </span><span class="s1">newIndex</span><span class="s0">,</span>
-                        <span class="s1">currentWeekTasks</span><span class="s0">: {},</span>
-                        <span class="s1">currentWeekStartDate</span><span class="s0">: </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">().</span><span class="s1">toISOString</span><span class="s0">().</span><span class="s1">split</span><span class="s0">(</span><span class="s4">'T'</span><span class="s0">)[</span><span class="s9">0</span><span class="s0">]</span>
-                    <span class="s0">};</span>
-                    <span class="s0">await </span><span class="s1">updateFirestoreState</span><span class="s0">(</span><span class="s1">newState</span><span class="s0">);</span>
-                <span class="s0">};</span>
+                    const newState = {
+                        history: newHistory,
+                        currentIndex: newIndex,
+                        currentWeekTasks: {},
+                        currentWeekStartDate: new Date().toISOString().split('T')[0]
+                    };
+                    await updateFirestoreState(newState);
+                };
 
-                <span class="s10">if </span><span class="s0">(!</span><span class="s1">isAutoAdvance </span><span class="s0">&amp;&amp; </span><span class="s1">Object</span><span class="s0">.</span><span class="s1">keys</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks </span><span class="s0">|| {}).</span><span class="s1">length </span><span class="s0">=== </span><span class="s9">0</span><span class="s0">) {</span>
-                    <span class="s1">showConfirmModal</span><span class="s0">(</span>
-                        <span class="s4">'Advance to Next Week?'</span><span class="s0">,</span>
-                        <span class="s4">'No tasks have been recorded for this week. Do you want to proceed to the next week anyway?'</span><span class="s0">,</span>
-                        <span class="s4">'Yes, Proceed'</span><span class="s0">,</span>
-                        <span class="s1">proceed</span>
-                    <span class="s0">);</span>
-                <span class="s0">} </span><span class="s10">else </span><span class="s0">{</span>
-                    <span class="s0">await </span><span class="s1">proceed</span><span class="s0">();</span>
-                <span class="s0">}</span>
-            <span class="s0">}</span>
+                if (!isAutoAdvance && Object.keys(appState.currentWeekTasks || {}).length === 0) {
+                    showConfirmModal(
+                        'Advance to Next Week?',
+                        'No tasks have been recorded for this week. Do you want to proceed to the next week anyway?',
+                        'Yes, Proceed',
+                        proceed
+                    );
+                } else {
+                    await proceed();
+                }
+            }
             
-            <span class="s10">function </span><span class="s1">initChart</span><span class="s0">() {</span>
-                <span class="s10">const </span><span class="s1">ctx </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">getElementById</span><span class="s0">(</span><span class="s4">'progressChart'</span><span class="s0">).</span><span class="s1">getContext</span><span class="s0">(</span><span class="s4">'2d'</span><span class="s0">);</span>
-                <span class="s1">progressChart </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Chart</span><span class="s0">(</span><span class="s1">ctx</span><span class="s0">, {</span>
-                    <span class="s1">type</span><span class="s0">: </span><span class="s4">'doughnut'</span><span class="s0">,</span>
-                    <span class="s1">data</span><span class="s0">: { </span><span class="s1">labels</span><span class="s0">: [</span><span class="s4">'Completed'</span><span class="s0">, </span><span class="s4">'Pending'</span><span class="s0">], </span><span class="s1">datasets</span><span class="s0">: [{ </span><span class="s1">data</span><span class="s0">: [</span><span class="s9">0</span><span class="s0">, </span><span class="s1">totalWeeklyTasks</span><span class="s0">], </span><span class="s1">backgroundColor</span><span class="s0">: [</span><span class="s4">'#00796B'</span><span class="s0">, </span><span class="s4">'#E0E0E0'</span><span class="s0">], </span><span class="s1">borderColor</span><span class="s0">: [</span><span class="s4">'#FDFBF8'</span><span class="s0">], </span><span class="s1">borderWidth</span><span class="s0">: </span><span class="s9">4</span><span class="s0">, </span><span class="s1">hoverOffset</span><span class="s0">: </span><span class="s9">4 </span><span class="s0">}] },</span>
-                    <span class="s1">options</span><span class="s0">: { </span><span class="s1">responsive</span><span class="s0">: </span><span class="s10">true</span><span class="s0">, </span><span class="s1">maintainAspectRatio</span><span class="s0">: </span><span class="s10">false</span><span class="s0">, </span><span class="s1">cutout</span><span class="s0">: </span><span class="s4">'70%'</span><span class="s0">, </span><span class="s1">plugins</span><span class="s0">: { </span><span class="s1">legend</span><span class="s0">: { </span><span class="s1">display</span><span class="s0">: </span><span class="s10">false </span><span class="s0">}, </span><span class="s1">tooltip</span><span class="s0">: { </span><span class="s1">enabled</span><span class="s0">: </span><span class="s10">false </span><span class="s0">} } }</span>
-                <span class="s0">});</span>
-            <span class="s0">}</span>
+            function initChart() {
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                progressChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Completed', 'Pending'], datasets: [{ data: [0, totalWeeklyTasks], backgroundColor: ['#00796B', '#E0E0E0'], borderColor: ['#FDFBF8'], borderWidth: 4, hoverOffset: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+                });
+            }
 
-            <span class="s10">function </span><span class="s1">updateChart</span><span class="s0">() {</span>
-                <span class="s10">const </span><span class="s1">checkedCount </span><span class="s0">= </span><span class="s1">Object</span><span class="s0">.</span><span class="s1">values</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekTasks </span><span class="s0">|| {}).</span><span class="s1">filter</span><span class="s0">(</span><span class="s1">Boolean</span><span class="s0">).</span><span class="s1">length</span><span class="s0">;</span>
-                <span class="s1">progressChart</span><span class="s0">.</span><span class="s1">data</span><span class="s0">.</span><span class="s1">datasets</span><span class="s0">[</span><span class="s9">0</span><span class="s0">].</span><span class="s1">data</span><span class="s0">[</span><span class="s9">0</span><span class="s0">] = </span><span class="s1">checkedCount</span><span class="s0">;</span>
-                <span class="s1">progressChart</span><span class="s0">.</span><span class="s1">data</span><span class="s0">.</span><span class="s1">datasets</span><span class="s0">[</span><span class="s9">0</span><span class="s0">].</span><span class="s1">data</span><span class="s0">[</span><span class="s9">1</span><span class="s0">] = </span><span class="s1">totalWeeklyTasks </span><span class="s0">- </span><span class="s1">checkedCount</span><span class="s0">;</span>
-                <span class="s1">progressChart</span><span class="s0">.</span><span class="s1">update</span><span class="s0">();</span>
-            <span class="s0">}</span>
+            function updateChart() {
+                const checkedCount = Object.values(appState.currentWeekTasks || {}).filter(Boolean).length;
+                progressChart.data.datasets[0].data[0] = checkedCount;
+                progressChart.data.datasets[0].data[1] = totalWeeklyTasks - checkedCount;
+                progressChart.update();
+            }
 
-            <span class="s10">function </span><span class="s1">renderHistory</span><span class="s0">() {</span>
-                <span class="s10">const </span><span class="s1">history </span><span class="s0">= </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">history </span><span class="s0">|| [];</span>
-                <span class="s10">if </span><span class="s0">(</span><span class="s1">history</span><span class="s0">.</span><span class="s1">length </span><span class="s0">=== </span><span class="s9">0</span><span class="s0">) {</span>
-                    <span class="s1">historyContent</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">`&lt;p class=&quot;text-center text-gray-500&quot;&gt;No history available yet.&lt;/p&gt;`</span><span class="s0">;</span>
-                    <span class="s10">return</span><span class="s0">;</span>
-                <span class="s0">}</span>
-                <span class="s1">historyContent</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">''</span><span class="s0">;</span>
-                <span class="s0">[</span><span class="s1">...history</span><span class="s0">].</span><span class="s1">reverse</span><span class="s0">().</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">entry </span><span class="s0">=&gt; {</span>
-                    <span class="s10">const </span><span class="s1">percentage </span><span class="s0">= </span><span class="s1">entry</span><span class="s0">.</span><span class="s1">totalTasks </span><span class="s0">&gt; </span><span class="s9">0 </span><span class="s0">? </span><span class="s1">Math</span><span class="s0">.</span><span class="s1">round</span><span class="s0">((</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">tasksCompleted </span><span class="s0">/ </span><span class="s1">entry</span><span class="s0">.</span><span class="s1">totalTasks</span><span class="s0">) * </span><span class="s9">100</span><span class="s0">) : </span><span class="s9">0</span><span class="s0">;</span>
-                    <span class="s10">const </span><span class="s1">card </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'div'</span><span class="s0">);</span>
-                    <span class="s1">card</span><span class="s0">.</span><span class="s1">className </span><span class="s0">= </span><span class="s4">'bg-gray-50 p-4 rounded-lg mb-3'</span><span class="s0">;</span>
-                    <span class="s1">card</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">`</span>
-                        <span class="s4">&lt;div class=&quot;flex justify-between items-center&quot;&gt; 
-                            &lt;div&gt; 
-                                &lt;p class=&quot;font-bold text-teal-800&quot;&gt;</span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">person</span><span class="s0">}</span><span class="s4">&lt;/p&gt; 
-                                &lt;p class=&quot;text-sm text-gray-500&quot;&gt;Week: </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">dateRange</span><span class="s0">.</span><span class="s1">start</span><span class="s0">} </span><span class="s4">- </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">dateRange</span><span class="s0">.</span><span class="s1">end</span><span class="s0">}</span><span class="s4">&lt;/p&gt; 
-                            &lt;/div&gt; 
-                            &lt;div class=&quot;text-right&quot;&gt; 
-                                 &lt;p class=&quot;font-semibold&quot;&gt;</span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">tasksCompleted</span><span class="s0">} </span><span class="s4">/ </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">totalTasks</span><span class="s0">} </span><span class="s4">completed&lt;/p&gt; 
-                                 &lt;div class=&quot;w-24 bg-gray-200 rounded-full h-2.5 mt-1&quot;&gt; 
-                                    &lt;div class=&quot;bg-teal-600 h-2.5 rounded-full&quot; style=&quot;width: </span><span class="s1">$</span><span class="s0">{</span><span class="s1">percentage</span><span class="s0">}</span><span class="s4">%&quot;&gt;&lt;/div&gt; 
-                                &lt;/div&gt; 
-                            &lt;/div&gt; 
-                        &lt;/div&gt; 
-                    `</span><span class="s0">;</span>
-                    <span class="s1">historyContent</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">card</span><span class="s0">);</span>
-                <span class="s0">});</span>
-            <span class="s0">}</span>
+            function renderHistory() {
+                const history = appState.history || [];
+                if (history.length === 0) {
+                    historyContent.innerHTML = `<p class="text-center text-gray-500">No history available yet.</p>`;
+                    return;
+                }
+                historyContent.innerHTML = '';
+                [...history].reverse().forEach(entry => {
+                    const percentage = entry.totalTasks > 0 ? Math.round((entry.tasksCompleted / entry.totalTasks) * 100) : 0;
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-50 p-4 rounded-lg mb-3';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-teal-800">${entry.person}</p>
+                                <p class="text-sm text-gray-500">Week: ${entry.dateRange.start} - ${entry.dateRange.end}</p>
+                            </div>
+                            <div class="text-right">
+                                 <p class="font-semibold">${entry.tasksCompleted} / ${entry.totalTasks} completed</p>
+                                 <div class="w-24 bg-gray-200 rounded-full h-2.5 mt-1">
+                                    <div class="bg-teal-600 h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    historyContent.appendChild(card);
+                });
+            }
 
-            <span class="s10">function </span><span class="s1">exportHistory</span><span class="s0">() {</span>
-                <span class="s10">const </span><span class="s1">history </span><span class="s0">= </span><span class="s1">appState</span><span class="s0">.</span><span class="s1">history </span><span class="s0">|| [];</span>
-                <span class="s10">if </span><span class="s0">(</span><span class="s1">history</span><span class="s0">.</span><span class="s1">length </span><span class="s0">=== </span><span class="s9">0</span><span class="s0">) {</span>
-                    <span class="s1">alert</span><span class="s0">(</span><span class="s4">&quot;No history available to export.&quot;</span><span class="s0">);</span>
-                    <span class="s10">return</span><span class="s0">;</span>
-                <span class="s0">}</span>
-                <span class="s10">let </span><span class="s1">exportText </span><span class="s0">= </span><span class="s4">&quot;Shared Living Cleaning Rota History</span><span class="s0">\n</span><span class="s4">===================================</span><span class="s0">\n\n</span><span class="s4">&quot;</span><span class="s0">;</span>
-                <span class="s1">history</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">entry </span><span class="s0">=&gt; {</span>
-                    <span class="s1">exportText </span><span class="s0">+= </span><span class="s4">`Week: </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">dateRange</span><span class="s0">.</span><span class="s1">start</span><span class="s0">} </span><span class="s4">- </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">dateRange</span><span class="s0">.</span><span class="s1">end</span><span class="s0">}\n</span><span class="s4">`</span><span class="s0">;</span>
-                    <span class="s1">exportText </span><span class="s0">+= </span><span class="s4">`Responsible: </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">person</span><span class="s0">}\n</span><span class="s4">`</span><span class="s0">;</span>
-                    <span class="s1">exportText </span><span class="s0">+= </span><span class="s4">`Completed: </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">tasksCompleted</span><span class="s0">} </span><span class="s4">of </span><span class="s1">$</span><span class="s0">{</span><span class="s1">entry</span><span class="s0">.</span><span class="s1">totalTasks</span><span class="s0">} </span><span class="s4">tasks</span><span class="s0">\n</span><span class="s4">`</span><span class="s0">;</span>
-                    <span class="s1">exportText </span><span class="s0">+= </span><span class="s4">`--------------------</span><span class="s0">\n\n</span><span class="s4">`</span><span class="s0">;</span>
-                <span class="s0">});</span>
+            function exportHistory() {
+                const history = appState.history || [];
+                if (history.length === 0) {
+                    alert("No history available to export.");
+                    return;
+                }
+                let exportText = "Shared Living Cleaning Rota History\n===================================\n\n";
+                history.forEach(entry => {
+                    exportText += `Week: ${entry.dateRange.start} - ${entry.dateRange.end}\n`;
+                    exportText += `Responsible: ${entry.person}\n`;
+                    exportText += `Completed: ${entry.tasksCompleted} of ${entry.totalTasks} tasks\n`;
+                    exportText += `--------------------\n\n`;
+                });
 
-                <span class="s10">const </span><span class="s1">blob </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Blob</span><span class="s0">([</span><span class="s1">exportText</span><span class="s0">], { </span><span class="s1">type</span><span class="s0">: </span><span class="s4">'text/plain;charset=utf-8' </span><span class="s0">});</span>
-                <span class="s10">const </span><span class="s1">url </span><span class="s0">= </span><span class="s1">URL</span><span class="s0">.</span><span class="s1">createObjectURL</span><span class="s0">(</span><span class="s1">blob</span><span class="s0">);</span>
-                <span class="s10">const </span><span class="s1">a </span><span class="s0">= </span><span class="s1">document</span><span class="s0">.</span><span class="s1">createElement</span><span class="s0">(</span><span class="s4">'a'</span><span class="s0">);</span>
-                <span class="s1">a</span><span class="s0">.</span><span class="s1">href </span><span class="s0">= </span><span class="s1">url</span><span class="s0">;</span>
-                <span class="s1">a</span><span class="s0">.</span><span class="s1">download </span><span class="s0">= </span><span class="s4">'cleaning-rota-history.txt'</span><span class="s0">;</span>
-                <span class="s1">document</span><span class="s0">.</span><span class="s1">body</span><span class="s0">.</span><span class="s1">appendChild</span><span class="s0">(</span><span class="s1">a</span><span class="s0">);</span>
-                <span class="s1">a</span><span class="s0">.</span><span class="s1">click</span><span class="s0">();</span>
-                <span class="s1">document</span><span class="s0">.</span><span class="s1">body</span><span class="s0">.</span><span class="s1">removeChild</span><span class="s0">(</span><span class="s1">a</span><span class="s0">);</span>
-                <span class="s1">URL</span><span class="s0">.</span><span class="s1">revokeObjectURL</span><span class="s0">(</span><span class="s1">url</span><span class="s0">);</span>
-            <span class="s0">}</span>
+                const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'cleaning-rota-history.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
             
-            <span class="s10">function </span><span class="s1">showConfirmModal</span><span class="s0">(</span><span class="s1">title</span><span class="s0">, </span><span class="s1">text</span><span class="s0">, </span><span class="s1">yesButtonText</span><span class="s0">, </span><span class="s1">onConfirm</span><span class="s0">) {</span>
-                <span class="s1">confirmModalTitle</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">title</span><span class="s0">;</span>
-                <span class="s1">confirmModalText</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s1">text</span><span class="s0">;</span>
-                <span class="s1">confirmModalYesBtn</span><span class="s0">.</span><span class="s1">textContent </span><span class="s0">= </span><span class="s1">yesButtonText</span><span class="s0">;</span>
-                <span class="s1">confirmAction </span><span class="s0">= </span><span class="s1">onConfirm</span><span class="s0">;</span>
-                <span class="s1">confirmModal</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">remove</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">);</span>
-            <span class="s0">}</span>
+            function showConfirmModal(title, text, yesButtonText, onConfirm) {
+                confirmModalTitle.textContent = title;
+                confirmModalText.innerHTML = text;
+                confirmModalYesBtn.textContent = yesButtonText;
+                confirmAction = onConfirm;
+                confirmModal.classList.remove('hidden');
+            }
 
-            <span class="s1">async </span><span class="s10">function </span><span class="s1">setupFirestoreListener</span><span class="s0">() {</span>
-                <span class="s10">try </span><span class="s0">{</span>
-                    <span class="s0">await </span><span class="s1">signInAnonymously</span><span class="s0">(</span><span class="s1">auth</span><span class="s0">);</span>
-                <span class="s0">} </span><span class="s10">catch </span><span class="s0">(</span><span class="s1">error</span><span class="s0">) {</span>
-                    <span class="s1">console</span><span class="s0">.</span><span class="s1">error</span><span class="s0">(</span><span class="s4">&quot;Firebase Auth Error:&quot;</span><span class="s0">, </span><span class="s1">error</span><span class="s0">);</span>
-                    <span class="s10">if </span><span class="s0">(</span><span class="s1">error</span><span class="s0">.</span><span class="s1">code </span><span class="s0">=== </span><span class="s4">'auth/configuration-not-found'</span><span class="s0">) {</span>
-                        <span class="s1">loadingOverlay</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">`</span>
-                        <span class="s4">&lt;div class=&quot;text-center p-4 max-w-lg mx-auto&quot;&gt; 
-                            &lt;h2 class=&quot;text-2xl font-bold text-red-600&quot;&gt;Action Required in Firebase&lt;/h2&gt; 
-                            &lt;p class=&quot;mt-2 text-gray-700&quot;&gt;The app can't log in because Anonymous Authentication isn't enabled in your Firebase project.&lt;/p&gt; 
-                            &lt;p class=&quot;mt-4 font-semibold&quot;&gt;How to fix this:&lt;/p&gt; 
-                            &lt;ol class=&quot;list-decimal list-inside text-left mt-2 space-y-1 text-gray-600&quot;&gt; 
-                                &lt;li&gt;Go to your Firebase Console.&lt;/li&gt; 
-                                &lt;li&gt;Select your project: &lt;strong&gt;wg-putzplanv2&lt;/strong&gt;&lt;/li&gt; 
-                                &lt;li&gt;In the left menu, go to &lt;strong&gt;Build &gt; Authentication&lt;/strong&gt;.&lt;/li&gt; 
-                                &lt;li&gt;Click the &lt;strong&gt;&quot;Get started&quot;&lt;/strong&gt; button if it appears.&lt;/li&gt; 
-                                &lt;li&gt;Go to the &lt;strong&gt;&quot;Sign-in method&quot;&lt;/strong&gt; tab.&lt;/li&gt; 
-                                &lt;li&gt;Find &lt;strong&gt;&quot;Anonymous&quot;&lt;/strong&gt; in the provider list and click it.&lt;/li&gt; 
-                                &lt;li&gt;Enable the toggle switch and click &lt;strong&gt;Save&lt;/strong&gt;.&lt;/li&gt; 
-                                &lt;li&gt;Reload this page.&lt;/li&gt; 
-                            &lt;/ol&gt; 
-                        &lt;/div&gt; 
-                        `</span><span class="s0">;</span>
-                    <span class="s0">}</span>
-                    <span class="s10">return</span><span class="s0">;</span>
-                <span class="s0">}</span>
+            async function setupFirestoreListener() {
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error);
+                    if (error.code === 'auth/configuration-not-found') {
+                        loadingOverlay.innerHTML = `
+                        <div class="text-center p-4 max-w-lg mx-auto">
+                            <h2 class="text-2xl font-bold text-red-600">Action Required in Firebase</h2>
+                            <p class="mt-2 text-gray-700">The app can't log in because Anonymous Authentication isn't enabled in your Firebase project.</p>
+                            <p class="mt-4 font-semibold">How to fix this:</p>
+                            <ol class="list-decimal list-inside text-left mt-2 space-y-1 text-gray-600">
+                                <li>Go to your Firebase Console.</li>
+                                <li>Select your project: <strong>wg-putzplanv2</strong></li>
+                                <li>In the left menu, go to <strong>Build > Authentication</strong>.</li>
+                                <li>Click the <strong>"Get started"</strong> button if it appears.</li>
+                                <li>Go to the <strong>"Sign-in method"</strong> tab.</li>
+                                <li>Find <strong>"Anonymous"</strong> in the provider list and click it.</li>
+                                <li>Enable the toggle switch and click <strong>Save</strong>.</li>
+                                <li>Reload this page.</li>
+                            </ol>
+                        </div>
+                        `;
+                    }
+                    return;
+                }
 
-                <span class="s1">unsubscribe </span><span class="s0">= </span><span class="s1">onSnapshot</span><span class="s0">(</span><span class="s1">stateDocRef</span><span class="s0">, (</span><span class="s1">doc</span><span class="s0">) =&gt; {</span>
-                    <span class="s10">if </span><span class="s0">(</span><span class="s1">doc</span><span class="s0">.</span><span class="s1">exists</span><span class="s0">()) {</span>
-                        <span class="s10">const </span><span class="s1">data </span><span class="s0">= </span><span class="s1">doc</span><span class="s0">.</span><span class="s1">data</span><span class="s0">();</span>
-                        <span class="s1">appState </span><span class="s0">= </span><span class="s1">data</span><span class="s0">;</span>
+                unsubscribe = onSnapshot(stateDocRef, (doc) => {
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        appState = data;
                         
-                        <span class="s10">const </span><span class="s1">today </span><span class="s0">= </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">();</span>
-                        <span class="s10">const </span><span class="s1">currentWeekId </span><span class="s0">= </span><span class="s1">getWeekId</span><span class="s0">(</span><span class="s1">today</span><span class="s0">);</span>
-                        <span class="s10">const </span><span class="s1">lastSavedWeekId </span><span class="s0">= </span><span class="s1">getWeekId</span><span class="s0">(</span><span class="s10">new </span><span class="s1">Date</span><span class="s0">(</span><span class="s1">appState</span><span class="s0">.</span><span class="s1">currentWeekStartDate</span><span class="s0">));</span>
+                        const today = new Date();
+                        const currentWeekId = getWeekId(today);
+                        const lastSavedWeekId = getWeekId(new Date(appState.currentWeekStartDate));
                         
-                        <span class="s10">if</span><span class="s0">(</span><span class="s1">currentWeekId </span><span class="s0">!== </span><span class="s1">lastSavedWeekId</span><span class="s0">) {</span>
-                            <span class="s1">nextPerson</span><span class="s0">(</span><span class="s10">true</span><span class="s0">);</span>
-                        <span class="s0">} </span><span class="s10">else </span><span class="s0">{</span>
-                            <span class="s1">updateDisplay</span><span class="s0">();</span>
-                        <span class="s0">}</span>
-                    <span class="s0">} </span><span class="s10">else </span><span class="s0">{</span>
-                        <span class="s1">console</span><span class="s0">.</span><span class="s1">log</span><span class="s0">(</span><span class="s4">&quot;No state in Firestore, creating initial state...&quot;</span><span class="s0">);</span>
-                        <span class="s10">const </span><span class="s1">initialState </span><span class="s0">= {</span>
-                            <span class="s1">currentIndex</span><span class="s0">: </span><span class="s9">0</span><span class="s0">,</span>
-                            <span class="s1">history</span><span class="s0">: [],</span>
-                            <span class="s1">currentWeekStartDate</span><span class="s0">: </span><span class="s10">new </span><span class="s1">Date</span><span class="s0">().</span><span class="s1">toISOString</span><span class="s0">().</span><span class="s1">split</span><span class="s0">(</span><span class="s4">'T'</span><span class="s0">)[</span><span class="s9">0</span><span class="s0">],</span>
-                            <span class="s1">currentWeekTasks</span><span class="s0">: {}</span>
-                        <span class="s0">};</span>
-                        <span class="s1">updateFirestoreState</span><span class="s0">(</span><span class="s1">initialState</span><span class="s0">).</span><span class="s1">then</span><span class="s0">(() =&gt; {</span>
-                            <span class="s1">appState </span><span class="s0">= </span><span class="s1">initialState</span><span class="s0">;</span>
-                            <span class="s1">updateDisplay</span><span class="s0">();</span>
-                        <span class="s0">});</span>
-                    <span class="s0">}</span>
-                <span class="s0">}, (</span><span class="s1">error</span><span class="s0">) =&gt; {</span>
-                    <span class="s1">console</span><span class="s0">.</span><span class="s1">error</span><span class="s0">(</span><span class="s4">&quot;Firestore snapshot error:&quot;</span><span class="s0">, </span><span class="s1">error</span><span class="s0">);</span>
-                    <span class="s1">loadingOverlay</span><span class="s0">.</span><span class="s1">innerHTML </span><span class="s0">= </span><span class="s4">`</span>
-                    <span class="s4">&lt;div class=&quot;text-center p-4&quot;&gt; 
-                        &lt;h2 class=&quot;text-2xl font-bold text-red-600&quot;&gt;Connection Error&lt;/h2&gt; 
-                        &lt;p class=&quot;mt-2 text-gray-700&quot;&gt;Could not connect to the database. Check your internet connection and Firestore rules.&lt;/p&gt; 
-                    &lt;/div&gt; 
-                `</span><span class="s0">;</span>
-                <span class="s0">});</span>
-            <span class="s0">}</span>
+                        if(currentWeekId !== lastSavedWeekId) {
+                            nextPerson(true);
+                        } else {
+                            updateDisplay();
+                        }
+                    } else {
+                        console.log("No state in Firestore, creating initial state...");
+                        const initialState = {
+                            currentIndex: 0,
+                            history: [],
+                            currentWeekStartDate: new Date().toISOString().split('T')[0],
+                            currentWeekTasks: {}
+                        };
+                        updateFirestoreState(initialState).then(() => {
+                            appState = initialState;
+                            updateDisplay();
+                        });
+                    }
+                }, (error) => {
+                    console.error("Firestore snapshot error:", error);
+                    loadingOverlay.innerHTML = `
+                    <div class="text-center p-4">
+                        <h2 class="text-2xl font-bold text-red-600">Connection Error</h2>
+                        <p class="mt-2 text-gray-700">Could not connect to the database. Check your internet connection and Firestore rules.</p>
+                    </div>
+                `;
+                });
+            }
 
-            <span class="s1">tabs</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">tab </span><span class="s0">=&gt; {</span>
-                <span class="s1">tab</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; {</span>
-                    <span class="s10">const </span><span class="s1">targetTab </span><span class="s0">= </span><span class="s1">tab</span><span class="s0">.</span><span class="s1">dataset</span><span class="s0">.</span><span class="s1">tab</span><span class="s0">;</span>
-                    <span class="s1">tabs</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">t </span><span class="s0">=&gt; </span><span class="s1">t</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">remove</span><span class="s0">(</span><span class="s4">'tab-active'</span><span class="s0">, </span><span class="s4">'tab-inactive'</span><span class="s0">));</span>
-                    <span class="s1">tabs</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">t </span><span class="s0">=&gt; </span><span class="s1">t</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">add</span><span class="s0">(</span><span class="s1">t </span><span class="s0">=== </span><span class="s1">tab </span><span class="s0">? </span><span class="s4">'tab-active' </span><span class="s0">: </span><span class="s4">'tab-inactive'</span><span class="s0">));</span>
-                    <span class="s1">tabPanes</span><span class="s0">.</span><span class="s1">forEach</span><span class="s0">(</span><span class="s1">pane </span><span class="s0">=&gt; </span><span class="s1">pane</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">toggle</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">, </span><span class="s1">pane</span><span class="s0">.</span><span class="s1">id </span><span class="s0">!== </span><span class="s4">`</span><span class="s1">$</span><span class="s0">{</span><span class="s1">targetTab</span><span class="s0">}</span><span class="s4">-tasks`</span><span class="s0">));</span>
-                <span class="s0">});</span>
-            <span class="s0">});</span>
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+                    tabs.forEach(t => t.classList.remove('tab-active', 'tab-inactive'));
+                    tabs.forEach(t => t.classList.add(t === tab ? 'tab-active' : 'tab-inactive'));
+                    tabPanes.forEach(pane => pane.classList.toggle('hidden', pane.id !== `${targetTab}-tasks`));
+                });
+            });
             
-            <span class="s1">confirmModalYesBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; {</span>
-                <span class="s10">if </span><span class="s0">(</span><span class="s1">confirmAction</span><span class="s0">) {</span>
-                    <span class="s1">confirmAction</span><span class="s0">();</span>
-                <span class="s0">}</span>
-                <span class="s1">closeConfirmModal</span><span class="s0">();</span>
-            <span class="s0">});</span>
+            confirmModalYesBtn.addEventListener('click', () => {
+                if (confirmAction) {
+                    confirmAction();
+                }
+                closeConfirmModal();
+            });
 
-            <span class="s10">const </span><span class="s1">closeConfirmModal </span><span class="s0">= () =&gt; {</span>
-                <span class="s1">confirmModal</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">add</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">);</span>
-                <span class="s1">confirmAction </span><span class="s0">= </span><span class="s10">null</span><span class="s0">;</span>
-            <span class="s0">};</span>
+            const closeConfirmModal = () => {
+                confirmModal.classList.add('hidden');
+                confirmAction = null;
+            };
 
-            <span class="s1">confirmModalNoBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, </span><span class="s1">closeConfirmModal</span><span class="s0">);</span>
-            <span class="s1">confirmModal</span><span class="s0">.</span><span class="s1">querySelector</span><span class="s0">(</span><span class="s4">'.modal-backdrop'</span><span class="s0">).</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, </span><span class="s1">closeConfirmModal</span><span class="s0">);</span>
+            confirmModalNoBtn.addEventListener('click', closeConfirmModal);
+            confirmModal.querySelector('.modal-backdrop').addEventListener('click', closeConfirmModal);
 
-            <span class="s1">nextPersonBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; </span><span class="s1">nextPerson</span><span class="s0">(</span><span class="s10">false</span><span class="s0">));</span>
-            <span class="s1">showHistoryBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; {</span>
-                <span class="s1">renderHistory</span><span class="s0">();</span>
-                <span class="s1">historyModal</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">remove</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">);</span>
-            <span class="s0">});</span>
-            <span class="s1">closeHistoryBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; </span><span class="s1">historyModal</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">add</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">));</span>
-            <span class="s1">historyModal</span><span class="s0">.</span><span class="s1">querySelector</span><span class="s0">(</span><span class="s4">'.modal-backdrop'</span><span class="s0">).</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, () =&gt; </span><span class="s1">historyModal</span><span class="s0">.</span><span class="s1">classList</span><span class="s0">.</span><span class="s1">add</span><span class="s0">(</span><span class="s4">'hidden'</span><span class="s0">));</span>
-            <span class="s1">exportHistoryBtn</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'click'</span><span class="s0">, </span><span class="s1">exportHistory</span><span class="s0">);</span>
+            nextPersonBtn.addEventListener('click', () => nextPerson(false));
+            showHistoryBtn.addEventListener('click', () => {
+                renderHistory();
+                historyModal.classList.remove('hidden');
+            });
+            closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
+            historyModal.querySelector('.modal-backdrop').addEventListener('click', () => historyModal.classList.add('hidden'));
+            exportHistoryBtn.addEventListener('click', exportHistory);
             
-            <span class="s1">tabs</span><span class="s0">[</span><span class="s9">0</span><span class="s0">].</span><span class="s1">click</span><span class="s0">();</span>
-            <span class="s1">initChart</span><span class="s0">();</span>
-            <span class="s1">setupFirestoreListener</span><span class="s0">();</span>
-        <span class="s0">}</span>
+            tabs[0].click();
+            initChart();
+            setupFirestoreListener();
+        }
 
-        <span class="s1">document</span><span class="s0">.</span><span class="s1">addEventListener</span><span class="s0">(</span><span class="s4">'DOMContentLoaded'</span><span class="s0">, </span><span class="s1">main</span><span class="s0">);</span>
-    <span class="s0">&lt;/</span><span class="s3">script</span><span class="s0">&gt;</span>
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
 
-<span class="s0">&lt;/</span><span class="s3">body</span><span class="s0">&gt;</span>
-
-
-
-<span class="s0">&lt;/</span><span class="s3">html</span><span class="s0">&gt;</span>
-
-</pre>
 </body>
+
+
+
 </html>
+
